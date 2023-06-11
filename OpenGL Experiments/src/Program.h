@@ -1,0 +1,30 @@
+#pragma once
+
+#include <glad/glad.h>
+#include "Shader.h"
+
+#define LOG_LENGTH 512
+
+class Program
+{
+public:
+	Program();
+	~Program();
+
+	void attach_shader(Shader& shader);
+	void link_program();
+
+	void use();
+private:
+	unsigned int program;
+	char log[LOG_LENGTH];
+
+	inline int get_location(const char* name) { return glGetUniformLocation(program, name); }
+public:
+	void get(unsigned int name, int* params);
+	void print_link_error();
+	inline unsigned int get_id() { return program; };
+
+	void set1f(const char* name, float value);
+};
+

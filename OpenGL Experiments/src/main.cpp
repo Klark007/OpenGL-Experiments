@@ -1,7 +1,9 @@
 #define GLFW_INCLUDE_NONE // disables glfw to include glad on it's own. order is now not important
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include "Shader.h"
+#include "Program.h"
 
 #include <iostream>
 
@@ -96,23 +98,15 @@ int main()
 	fragment_shader.compile();
 	fragment_shader.print_compile_error();
 
-	unsigned int program = glCreateProgram();
-	glAttachShader(program, vertex_shader.get_id());
-	glAttachShader(program, fragment_shader.get_id());
-	glLinkProgram(program);
+	Program program = {};
+	program.attach_shader(vertex_shader);
+	program.attach_shader(fragment_shader);
+	program.link_program();
+	program.print_link_error();
 
-	int program_link_status;
-	glGetProgramiv(program, GL_LINK_STATUS, &program_link_status);
-	if (program_link_status != GL_TRUE) {
-		char program_log[512];
-		glGetProgramInfoLog(program, 512, NULL, program_log);
-		std::cerr << "Program linking failed: " << program_log << std::endl;
-	}
-	glUseProgram(program);
-
-	int offset_location = glGetUniformLocation(program, "offset");
-	glUniform1f(offset_location, -0.5);
-
+	program.use();
+	program.set1f("offset", -0.5);
+	
 	std::cout << "Finished preprocessing" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
 	while (!glfwWindowShouldClose(window))
@@ -125,7 +119,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// drawArray is for without indices, drawElements for indexed drawing
-		glUseProgram(program);
+		program.use();
 		glBindVertexArray(vao);
 
 		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
@@ -134,8 +128,6 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-
-	glDeleteProgram(program);
 
 	// destroy window and clean up resources
 	glfwTerminate();
