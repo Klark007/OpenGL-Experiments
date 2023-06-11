@@ -1,8 +1,9 @@
-# include <iostream>
-
 #define GLFW_INCLUDE_NONE // disables glfw to include glad on it's own. order is now not important
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "Shader.h"
+
+#include <iostream>
 
 void glfw_error_callback(int error, const char* description);
 
@@ -84,48 +85,20 @@ int main()
 	*/
 
 	// shaders
-	const char* vertex_shader_code = "#version 330 core\n"
-		"layout (location = 0) in vec3 pos;\n"
-		"void main()\n"
-		"{\n"
-		"   gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);\n"
-		"}\0";
-
-	unsigned int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex_shader, 1, &vertex_shader_code, NULL); // reads in 1 null terminated char*
-	glCompileShader(vertex_shader);
-	// check success
-	int vertex_compiled_status;
-	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vertex_compiled_status);
-	if (vertex_compiled_status != GL_TRUE) {
-		char vertex_log[512];
-		glGetShaderInfoLog(vertex_shader, 512, NULL, vertex_log);
-		std::cerr << "Vertex shader compilation failed: " << vertex_log << std::endl;
-	}
-
-
-	const char* fragment_shader_code = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"   FragColor = vec4(1.0f, 0.5f, 0.3f, 1.0f);\n"
-		"}\0";
 	
-	unsigned int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment_shader, 1, &fragment_shader_code, NULL);
-	glCompileShader(fragment_shader);
+	Shader vertex_shader{ GL_VERTEX_SHADER };
+	vertex_shader.add_source_from_file("./shaders/base.vs");
+	vertex_shader.compile();
+	vertex_shader.print_compile_error();
 
-	int fragment_compiled_status;
-	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &fragment_compiled_status);
-	if (fragment_compiled_status != GL_TRUE) {
-		char fragment_log[512];
-		glGetShaderInfoLog(fragment_shader, 512, NULL, fragment_log);
-		std::cerr << "Fragment shader compilation failed: " << fragment_log << std::endl;
-	}
+	Shader fragment_shader{ GL_FRAGMENT_SHADER };
+	fragment_shader.add_source_from_file("./shaders/uniform_color.fs");
+	fragment_shader.compile();
+	fragment_shader.print_compile_error();
 
 	unsigned int program = glCreateProgram();
-	glAttachShader(program, vertex_shader);
-	glAttachShader(program, fragment_shader);
+	glAttachShader(program, vertex_shader.get_id());
+	glAttachShader(program, fragment_shader.get_id());
 	glLinkProgram(program);
 
 	int program_link_status;
@@ -135,9 +108,10 @@ int main()
 		glGetProgramInfoLog(program, 512, NULL, program_log);
 		std::cerr << "Program linking failed: " << program_log << std::endl;
 	}
+	glUseProgram(program);
 
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
+	int offset_location = glGetUniformLocation(program, "offset");
+	glUniform1f(offset_location, -0.5);
 
 	std::cout << "Finished preprocessing" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -153,10 +127,8 @@ int main()
 		// drawArray is for without indices, drawElements for indexed drawing
 		glUseProgram(program);
 		glBindVertexArray(vao);
-		std::cout << "Load " << glGetError() << " " << GL_INVALID_ENUM << std::endl;
 
 		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
-		std::cout << "Draw " << glGetError() << " " << GL_INVALID_ENUM << std::endl;
 
 		// buffer
 		glfwSwapBuffers(window);
