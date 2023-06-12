@@ -44,3 +44,8 @@ void Program::set1f(const char* name, float value)
 {
 	glUniform1f(get_location(name), value);
 }
+
+void Program::set_mat4f(const char* name, glm::mat4& value)
+{
+	glUniformMatrix4fv(get_location(name), 1, GL_FALSE, glm::value_ptr(value));
+}

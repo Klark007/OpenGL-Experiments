@@ -2,6 +2,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "Shader.h"
 #include "Program.h"
 
@@ -47,17 +51,58 @@ int main()
 	glfwSwapInterval(1); // default swap interval is 0 which can lead to screen tearing
 
 
+	glEnable(GL_DEPTH_TEST);
+
 	float vertex_data[] = {
-		0.25f, 0.25f, 0.0f, // bottom left
-		0.75f, 0.25f, 0.0f, // bottom right
-		0.75f, 0.75f, 0.0f, // top right
-		0.25f, 0.75f, 0.0f, // top left
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
 		
+	/*
 	unsigned int indices[] = {
 		0,1,2,
 		0,2,3
 	};
+	*/
 
 	// vertex array object
 	unsigned int vao;
@@ -71,14 +116,18 @@ int main()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
 
 	// configure attributes
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
+
 	glEnableVertexAttribArray(0);
 
+	/*
 	// buffer index
 	unsigned int ebo;
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo); // index buffer
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	*/
 
 	/*
 	glBindVertexArray(0); // needs to happen before unbinding of vbo and ebo
@@ -89,12 +138,12 @@ int main()
 	// shaders
 	
 	Shader vertex_shader{ GL_VERTEX_SHADER };
-	vertex_shader.add_source_from_file("./shaders/base.vs");
+	vertex_shader.add_source_from_file("./shaders/mvp.vs");
 	vertex_shader.compile();
 	vertex_shader.print_compile_error();
 
 	Shader fragment_shader{ GL_FRAGMENT_SHADER };
-	fragment_shader.add_source_from_file("./shaders/uniform_color.fs");
+	fragment_shader.add_source_from_file("./shaders/depth_color.fs");
 	fragment_shader.compile();
 	fragment_shader.print_compile_error();
 
@@ -104,8 +153,20 @@ int main()
 	program.link_program();
 	program.print_link_error();
 
+	glm::mat4 model = glm::mat4(1.0);
+	model = glm::rotate(model, glm::radians(55.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+
+	glm::mat4 view = glm::mat4(1.0);
+	view = glm::translate(view, glm::vec3(0.0, 0.0, -2.0));
+	//view = glm::rotate(view, glm::radians(10.0f), glm::vec3(1.0, 0.0, 0.0));
+
+	glm::mat4 projection;
+	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.01f, 100.0f);
+
 	program.use();
-	program.set1f("offset", -0.5);
+	program.set_mat4f("model", model);
+	program.set_mat4f("view", view);
+	program.set_mat4f("projection", projection);
 	
 	std::cout << "Finished preprocessing" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -116,13 +177,13 @@ int main()
 		
 		// rendering
 		glClearColor(0.25, 0.5, 0.1, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// drawArray is for without indices, drawElements for indexed drawing
 		program.use();
 		glBindVertexArray(vao);
-
-		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex_data) / sizeof(float));
 
 		// buffer
 		glfwSwapBuffers(window);

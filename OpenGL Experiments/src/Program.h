@@ -1,6 +1,9 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "Shader.h"
 
 #define LOG_LENGTH 512
@@ -26,5 +29,6 @@ public:
 	inline unsigned int get_id() { return program; };
 
 	void set1f(const char* name, float value);
+	void set_mat4f(const char* name, glm::mat4& value);
 };
 

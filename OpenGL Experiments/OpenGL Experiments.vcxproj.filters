@@ -39,5 +39,9 @@
   <ItemGroup>
     <None Include="shaders\base.vs" />
     <None Include="shaders\uniform_color.fs" />
+    <None Include="shaders\mvp.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="shaders\depth_color.fs" />
   </ItemGroup>
 </Project>

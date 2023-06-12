@@ -30,7 +30,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\base.vs" />
+    <None Include="shaders\mvp.vs" />
     <None Include="shaders\uniform_color.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="shaders\depth_color.fs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
