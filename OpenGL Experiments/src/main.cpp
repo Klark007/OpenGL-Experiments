@@ -8,6 +8,7 @@
 
 #include "Shader.h"
 #include "Program.h"
+#include "Camera.h"
 
 #include <iostream>
 
@@ -156,9 +157,8 @@ int main()
 	glm::mat4 model = glm::mat4(1.0);
 	model = glm::rotate(model, glm::radians(55.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
 
-	glm::mat4 view = glm::mat4(1.0);
-	view = glm::translate(view, glm::vec3(0.0, 0.0, -2.0));
-	//view = glm::rotate(view, glm::radians(10.0f), glm::vec3(1.0, 0.0, 0.0));
+	Camera camera = {glm::vec3(0.0, 2.0, 4.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0)};
+	glm::mat4 view = camera.generate_view_mat();
 
 	glm::mat4 projection;
 	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.01f, 100.0f);
@@ -179,8 +179,14 @@ int main()
 		glClearColor(0.25, 0.5, 0.1, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// drawArray is for without indices, drawElements for indexed drawing
 		program.use();
+
+		camera.set_pos(glm::vec3(5 * std::cos(glfwGetTime()), 2.0, 5 * std::sin(glfwGetTime())));
+		view = camera.generate_view_mat();
+		program.set_mat4f("view", view);
+
+		// drawArray is for without indices, drawElements for indexed drawing
+		
 		glBindVertexArray(vao);
 		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex_data) / sizeof(float));

@@ -27,12 +27,18 @@
     <ClCompile Include="src\Program.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="src\Camera.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="src\Program.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
