@@ -33,6 +33,8 @@
   <ItemGroup>
     <None Include="shaders\base.vs" />
     <None Include="shaders\mvp.vs" />
+    <None Include="shaders\phong.fs" />
+    <None Include="shaders\phong.vs" />
     <None Include="shaders\uniform_color.fs" />
   </ItemGroup>
   <ItemGroup>
