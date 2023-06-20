@@ -18,5 +18,6 @@ private:
 
 public:
 	glm::mat4 generate_view_mat();
+	inline glm::vec3 get_pos() { return position; };
 };
 

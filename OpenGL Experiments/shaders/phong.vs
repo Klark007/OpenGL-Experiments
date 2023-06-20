@@ -6,10 +6,14 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec3 v_normal;
+out vec3 w_position;
+out vec3 w_normal;
 
 void main() 
 {
 	gl_Position = projection * view * model * vec4(pos.x, pos.y, pos.z, 1.0);
-	v_normal = normal;
+	
+	// send world space vertex positions and normals
+	w_position = vec3(model * vec4(pos, 1.0));
+	w_normal   = mat3(transpose(inverse(model))) * normal;
 }

@@ -159,7 +159,7 @@ int main()
 	program.print_link_error();
 
 	glm::mat4 model = glm::mat4(1.0);
-	model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(0.0, 0.0, 1.0)));
+	//model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(0.0, 0.0, 1.0)));
 
 	Camera camera = {glm::vec3(0.0, 2.0, 4.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0)};
 	glm::mat4 view = camera.generate_view_mat();
@@ -171,7 +171,10 @@ int main()
 	program.set_mat4f("model", model);
 	program.set_mat4f("view", view);
 	program.set_mat4f("projection", projection);
-	
+
+	program.set_vec3f("mat.specular", 1.0, 0.8, 0.8);
+	program.set1f("mat.shininess", 32.0);
+
 	std::cout << "Finished preprocessing" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
 	while (!glfwWindowShouldClose(window))
@@ -185,15 +188,38 @@ int main()
 
 		program.use();
 
-		camera.set_pos(glm::vec3(5 * std::cos(glfwGetTime()), 2.0, 5 * std::sin(glfwGetTime())));
+		program.set_mat4f("model", model);
+
+		program.set_vec3f("mat.diffuse", 1.0, 0.2, 0.2);
+
+		program.set_vec3f("light.diffuse", 1.0, 1.0, 1.0);
+		program.set_vec3f("light.specular", 1.0, 1.0, 1.0);
+		program.set_vec3f("light.pos", 1.2, 1.0, 2.0);
+
+		glm::vec3 camera_pos = glm::vec3(5 * std::cos(glfwGetTime()), -2.0, 5 * std::sin(glfwGetTime()));
+		camera.set_pos(camera_pos);
 		view = camera.generate_view_mat();
 		program.set_mat4f("view", view);
+
+		program.set_vec3f("camera_pos", camera_pos);
 
 		// drawArray is for without indices, drawElements for indexed drawing
 		
 		glBindVertexArray(vao);
 		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex_data) / sizeof(float));
+
+		program.set_vec3f("mat.diffuse", 1.0, 1.0, 1.0);
+
+		program.set_vec3f("light.diffuse", 1.0, 1.0, 1.0);
+		program.set_vec3f("light.specular", 0.0, 0.0, 0.0);
+
+		glm::mat4 model2 = glm::mat4(1.0);
+		model2 = glm::translate(model2, glm::vec3(1.2, 1.0, 2.0));
+		program.set_mat4f("model", model2);
+
+		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex_data) / sizeof(float));
+
 
 		// buffer
 		glfwSwapBuffers(window);
