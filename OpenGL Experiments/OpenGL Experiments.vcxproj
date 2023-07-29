@@ -39,6 +39,11 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\depth_color.fs" />
+    <Text Include="shaders\texture.vs" />
+    <Text Include="shaders\texture.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\logo.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -95,7 +100,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\Users\Jan\source\OpenGL Dependencies\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Jan\source\OpenGL Dependencies\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\Jan\source\OpenGL Dependencies\lib;C:\Users\Jan\source\OpenGL Dependencies\bin;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -137,6 +142,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ProjectReference>
+      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

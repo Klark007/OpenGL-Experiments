@@ -6,6 +6,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "Shader.h"
 #include "Program.h"
 #include "Camera.h"
@@ -126,6 +129,28 @@ int main()
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
 
+	// textures
+	const std::string path = "textures/logo.png";
+	int width, height, channels;
+	unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+
+	unsigned int texture;
+	glGenTextures(1, &texture);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	if (data == NULL) {
+		std::cerr << "Image not found at: " << path << std::endl;
+	}
+	else {
+		// should be GL_RGB32F, GL_BGR
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D); // is required unless manually defined for needed levels
+	}
+
+	stbi_image_free(data);
+
 	/*
 	// buffer index
 	unsigned int ebo;
@@ -143,12 +168,12 @@ int main()
 	// shaders
 	
 	Shader vertex_shader{ GL_VERTEX_SHADER };
-	vertex_shader.add_source_from_file("./shaders/phong.vs");
+	vertex_shader.add_source_from_file("./shaders/texture.vs");
 	vertex_shader.compile();
 	vertex_shader.print_compile_error();
 
 	Shader fragment_shader{ GL_FRAGMENT_SHADER };
-	fragment_shader.add_source_from_file("./shaders/phong.fs");
+	fragment_shader.add_source_from_file("./shaders/texture.fs");
 	fragment_shader.compile();
 	fragment_shader.print_compile_error();
 
@@ -172,8 +197,15 @@ int main()
 	program.set_mat4f("view", view);
 	program.set_mat4f("projection", projection);
 
+	program.set_vec3f("mat.diffuse", 1.0, 0.2, 0.2);
 	program.set_vec3f("mat.specular", 1.0, 0.8, 0.8);
 	program.set1f("mat.shininess", 32.0);
+
+	program.set_vec3f("light.diffuse", 1.0, 1.0, 1.0);
+	program.set_vec3f("light.specular", 1.0, 1.0, 1.0);
+	program.set_vec3f("light.pos", 1.2, 1.0, 2.0);
+
+	glUniform1i(glGetUniformLocation(program.get_id(), "color_texture"), 0); // set it manually
 
 	std::cout << "Finished preprocessing" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -188,13 +220,10 @@ int main()
 
 		program.use();
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
 		program.set_mat4f("model", model);
-
-		program.set_vec3f("mat.diffuse", 1.0, 0.2, 0.2);
-
-		program.set_vec3f("light.diffuse", 1.0, 1.0, 1.0);
-		program.set_vec3f("light.specular", 1.0, 1.0, 1.0);
-		program.set_vec3f("light.pos", 1.2, 1.0, 2.0);
 
 		glm::vec3 camera_pos = glm::vec3(5 * std::cos(glfwGetTime()), -2.0, 5 * std::sin(glfwGetTime()));
 		camera.set_pos(camera_pos);
@@ -208,11 +237,6 @@ int main()
 		glBindVertexArray(vao);
 		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex_data) / sizeof(float));
-
-		program.set_vec3f("mat.diffuse", 1.0, 1.0, 1.0);
-
-		program.set_vec3f("light.diffuse", 1.0, 1.0, 1.0);
-		program.set_vec3f("light.specular", 0.0, 0.0, 0.0);
 
 		glm::mat4 model2 = glm::mat4(1.0);
 		model2 = glm::translate(model2, glm::vec3(1.2, 1.0, 2.0));
