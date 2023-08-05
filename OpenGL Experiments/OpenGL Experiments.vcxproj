@@ -43,6 +43,8 @@
     <Text Include="shaders\texture.fs" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="textures\container_diffuse.png" />
+    <Image Include="textures\container_specular.png" />
     <Image Include="textures\logo.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

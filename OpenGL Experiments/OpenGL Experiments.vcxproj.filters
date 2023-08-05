@@ -58,5 +58,11 @@
     <Image Include="textures\logo.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
+    <Image Include="textures\container_diffuse.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="textures\container_specular.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
   </ItemGroup>
 </Project>

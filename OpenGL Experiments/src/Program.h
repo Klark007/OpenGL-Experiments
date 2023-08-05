@@ -28,6 +28,7 @@ public:
 	void print_link_error();
 	inline unsigned int get_id() { return program; };
 
+	void set1i(const char* name, int value);
 	void set1f(const char* name, float value);
 
 	void set_vec3f(const char* name, glm::vec3& value);

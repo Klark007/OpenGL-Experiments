@@ -40,6 +40,11 @@ void Program::print_link_error()
 	}
 }
 
+void Program::set1i(const char* name, int value)
+{
+	glUniform1i(get_location(name), value);
+}
+
 void Program::set1f(const char* name, float value)
 {
 	glUniform1f(get_location(name), value);

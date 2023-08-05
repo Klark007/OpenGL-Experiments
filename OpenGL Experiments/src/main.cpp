@@ -14,13 +14,21 @@
 #include "Camera.h"
 
 #include <iostream>
+#include <direct.h> ^// windows get cwd
 
 void glfw_error_callback(int error, const char* description);
-
 void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height);
+unsigned int loadTexture(const char* path);
 
 int main()
 {
+	char* cwd_buffer;
+	if (!(cwd_buffer = _getcwd(NULL, 0))) {
+		std::cerr << "CWD Buffer allocation failed" << std::endl;
+		return -1;
+	}
+
+
 	// init glad and glfw
 	if (!glfwInit()) {
 		std::cerr << "GLFW Initalization failed" << std::endl;
@@ -130,26 +138,8 @@ int main()
 	glEnableVertexAttribArray(2);
 
 	// textures
-	const std::string path = "textures/logo.png";
-	int width, height, channels;
-	unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-
-	unsigned int texture;
-	glGenTextures(1, &texture);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	if (data == NULL) {
-		std::cerr << "Image not found at: " << path << std::endl;
-	}
-	else {
-		// should be GL_RGB32F, GL_BGR
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D); // is required unless manually defined for needed levels
-	}
-
-	stbi_image_free(data);
+	unsigned int texture_diffuse = loadTexture("textures/container_diffuse.png");
+	unsigned int texture_specular = loadTexture("textures/container_specular.png");
 
 	/*
 	// buffer index
@@ -168,12 +158,14 @@ int main()
 	// shaders
 	
 	Shader vertex_shader{ GL_VERTEX_SHADER };
-	vertex_shader.add_source_from_file("./shaders/texture.vs");
+	vertex_shader.add_source_from_file("./shaders/phong.vs");
+	std::cout << "Vertex shader compilation" << std::endl;
 	vertex_shader.compile();
 	vertex_shader.print_compile_error();
 
 	Shader fragment_shader{ GL_FRAGMENT_SHADER };
-	fragment_shader.add_source_from_file("./shaders/texture.fs");
+	std::cout << "Fragment shader compilation" << std::endl;
+	fragment_shader.add_source_from_file("./shaders/phong.fs");
 	fragment_shader.compile();
 	fragment_shader.print_compile_error();
 
@@ -197,15 +189,15 @@ int main()
 	program.set_mat4f("view", view);
 	program.set_mat4f("projection", projection);
 
-	program.set_vec3f("mat.diffuse", 1.0, 0.2, 0.2);
-	program.set_vec3f("mat.specular", 1.0, 0.8, 0.8);
-	program.set1f("mat.shininess", 32.0);
+	// potential driver bug with texture unit 0 being used if active
+	program.set1i("mat.diffuse_texture", 0);
+	program.set1i("mat.specular_texture", 1);
 
-	program.set_vec3f("light.diffuse", 1.0, 1.0, 1.0);
+	program.set1f("mat.shininess", 64.0);
+
+	program.set_vec3f("light.diffuse", 0.5f, 0.5f, 0.5f);
 	program.set_vec3f("light.specular", 1.0, 1.0, 1.0);
 	program.set_vec3f("light.pos", 1.2, 1.0, 2.0);
-
-	glUniform1i(glGetUniformLocation(program.get_id(), "color_texture"), 0); // set it manually
 
 	std::cout << "Finished preprocessing" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -221,7 +213,10 @@ int main()
 		program.use();
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindTexture(GL_TEXTURE_2D, texture_diffuse);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture_specular);
 
 		program.set_mat4f("model", model);
 
@@ -238,12 +233,13 @@ int main()
 		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex_data) / sizeof(float));
 
+		
 		glm::mat4 model2 = glm::mat4(1.0);
 		model2 = glm::translate(model2, glm::vec3(1.2, 1.0, 2.0));
 		program.set_mat4f("model", model2);
 
 		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertex_data) / sizeof(float));
-
+		
 
 		// buffer
 		glfwSwapBuffers(window);
@@ -252,6 +248,43 @@ int main()
 
 	// destroy window and clean up resources
 	glfwTerminate();
+}
+
+unsigned int loadTexture(char const* path)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+
+	int width, height, nrComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+	if (data)
+	{
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
+	return textureID;
 }
 
 void glfw_error_callback(int error, const char* description)
