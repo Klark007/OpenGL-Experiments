@@ -78,6 +78,23 @@ int main()
 
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_POLYGON_OFFSET_FILL);
+
+	Model backpack = { "objects/backpack/backpack.obj" };
+
+	std::vector<Vertex> vertices = {
+		{glm::vec3(0.0,0.0,0.0), glm::vec3(0.0,1.0,0.0), glm::vec2(0.0,0.0)},
+		{glm::vec3(0.0,0.0,1.0), glm::vec3(0.0,1.0,0.0), glm::vec2(0.0,1.0)},
+		{glm::vec3(1.0,0.0,0.0), glm::vec3(0.0,1.0,0.0), glm::vec2(1.0,0.0)},
+		{glm::vec3(1.0,0.0,1.0), glm::vec3(0.0,1.0,0.0), glm::vec2(1.0,1.0)}
+	};
+	std::vector<unsigned int> indices = { 0,1,2,1,3,2 };
+	std::shared_ptr<Material> material = std::make_shared<Material>(std::vector<std::pair<std::string, std::string>> { {"diffuse", "container_diffuse.png"}, {"specular", "container_specular.png"}}, "textures");
+	Mesh ground_plane {vertices, indices, material};
+	glm::mat4 ground_model = glm::mat4(1.0);
+	ground_model = glm::translate(ground_model, glm::vec3(-5, -1.8, -5));
+	ground_model = glm::scale(ground_model, glm::vec3(10, 1, 10));
+
 
 	// shaders
 	Shader vertex_shader{ GL_VERTEX_SHADER };
@@ -92,57 +109,155 @@ int main()
 	fragment_shader.compile();
 	fragment_shader.print_compile_error();
 
-	std::shared_ptr<Program> program = std::make_shared<Program>();
-	program->attach_shader(vertex_shader);
-	program->attach_shader(fragment_shader);
-	program->link_program();
-	program->print_link_error();
+	Program program {};
+	program.attach_shader(vertex_shader);
+	program.attach_shader(fragment_shader);
+	program.link_program();
+	program.print_link_error();
 
-	Model backpack = {"objects/backpack/backpack.obj", program};
 
 	glm::mat4 model = glm::mat4(1.0);
-
 	glm::mat4 view = camera.generate_view_mat();
-
 	glm::mat4 projection;
 	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.01f, 100.0f);
 
-	program->use();
-	program->set_mat4f("model", model);
-	program->set_mat4f("view", view);
-	program->set_mat4f("projection", projection);
+	program.use();
+	program.set_mat4f("view", view);
+	program.set_mat4f("projection", projection);
 
 	// potential driver bug with texture unit 0 being used if active
-	program->set1i("mat.diffuse_0", 0);
-	program->set1i("mat.specular_0", 1);
+	program.set1i("mat.diffuse_0", 0);
+	program.set1i("mat.specular_0", 1);
 
-	program->set1f("mat.shininess", 64.0);
+	program.set1f("mat.shininess", 64.0);
 
-	program->set_vec3f("light.diffuse", 0.65f, 0.65f, 0.65f);
-	program->set_vec3f("light.specular", 1.0, 1.0, 1.0);
-	program->set_vec3f("light.pos", 1.2, 1.0, 2.0);
+	glm::vec3 light_position { 10.0, 8.0, 7.5  };
+	glm::mat4 light_model = glm::mat4(1.0);
+	light_model = glm::translate(light_model, light_position);
+	light_model = glm::scale(light_model, glm::vec3 {0.5f, 0.5f, 0.5f});
 
-	std::cout << "Finished preprocessing" << glGetError() << " " << GL_NO_ERROR << std::endl;
+	program.set_vec3f("light.diffuse", 0.65f, 0.65f, 0.65f);
+	program.set_vec3f("light.specular", 1.0, 1.0, 1.0);
+	program.set_vec3f("light.pos", light_position);
+
+
+	// shadows
+	unsigned int shadow_buffer;
+	glGenFramebuffers(1, &shadow_buffer);
+
+	unsigned int shadow_texture;
+	glGenTextures(1, &shadow_texture);
+	glBindTexture(GL_TEXTURE_2D, shadow_texture);
+
+	// different resolution than window
+	unsigned int shadow_resolution_x = 1024;
+	unsigned int shadow_resolution_y = 1024;
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_resolution_x, shadow_resolution_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*) 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, shadow_buffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texture, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cerr << "Depth buffer creation failed with status: " << status << std::endl;
+		return -1;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	Shader depth_vshader{ GL_VERTEX_SHADER };
+	depth_vshader.add_source_from_file("shaders/depth.vs");
+	std::cout << "Vertex shader compilation" << std::endl;
+	depth_vshader.compile();
+	depth_vshader.print_compile_error();
+
+	Shader depth_fshader{ GL_FRAGMENT_SHADER };
+	std::cout << "Fragment shader compilation" << std::endl;
+	depth_fshader.add_source_from_file("shaders/depth.fs");
+	depth_fshader.compile();
+	depth_fshader.print_compile_error();
+
+	Program depth_program {};
+	depth_program.attach_shader(depth_vshader);
+	depth_program.attach_shader(depth_fshader);
+	depth_program.link_program();
+	depth_program.print_link_error();
+
+
+	glm::mat4 light_projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.5f, 50.0f);
+	glm::mat4 light_view = glm::lookAt(light_position, glm::vec3{0.0f}, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 light_space = light_projection * light_view;
+
+	depth_program.use();
+	depth_program.set_mat4f("light_space", light_space);
+
+	program.use();
+	program.set_mat4f("light_space", light_space);
+	program.set1i("light.shadow_map", 2);
+
+	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
+
+	float slope_scale_bias = 0.8f;
+	float constant_bias = 5.0f;
 
 	while (!glfwWindowShouldClose(window))
 	{
 		// input
 		handle_input(window);
+
+		// draw shadow to other textures
+		glBindFramebuffer(GL_FRAMEBUFFER, shadow_buffer);
+		glViewport(0, 0, shadow_resolution_x, shadow_resolution_y);
+
+		glClear(GL_DEPTH_BUFFER_BIT);
 		
+		depth_program.use();
+
+		glPolygonOffset(slope_scale_bias, constant_bias);
+
+		depth_program.set_mat4f("model", model);
+		backpack.draw(depth_program);
+		depth_program.set_mat4f("model", ground_model);
+		ground_plane.draw(depth_program);
+		
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, screen_x, screen_y);
+
 		// rendering
 		glClearColor(0.25, 0.5, 0.1, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		program->use();
+		program.use();
+
+		glPolygonOffset(0.0f, 0.0f);
 
 		view = camera.generate_view_mat();
-		program->set_mat4f("view", view);
+		program.set_mat4f("view", view);
 
 		glm::vec3 camera_pos = camera.get_pos();
-		program->set_vec3f("camera_pos", camera_pos);
+		program.set_vec3f("camera_pos", camera_pos);
 
-		// drawArray is for without indices, drawElements for indexed drawing
-		backpack.draw();
+		// activate shadow map, assumes that materials only use Texture unit 0,1
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, shadow_texture);
+
+		program.set_mat4f("model", model);
+		backpack.draw(program);
+
+		program.set_mat4f("model", light_model);
+		backpack.draw(program);
+
+		program.set_mat4f("model", ground_model);
+		ground_plane.draw(program);
+
 
 		// buffer
 		glfwSwapBuffers(window);

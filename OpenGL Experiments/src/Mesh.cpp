@@ -35,9 +35,9 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<index> indices, std::shared
 	setup_mesh();
 }
 
-void Mesh::draw()
+void Mesh::draw(Program& program)
 {
-	material->use();
+	material->use(program);
 	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 	

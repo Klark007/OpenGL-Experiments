@@ -1,7 +1,6 @@
 #include "Model.h"
 
-Model::Model(std::string path, std::shared_ptr<Program> program)
-	: program{ program }
+Model::Model(std::string path)
 {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate);
@@ -19,10 +18,10 @@ Model::Model(std::string path, std::shared_ptr<Program> program)
 	load_node(scene->mRootNode, scene);
 }
 
-void Model::draw()
+void Model::draw(Program& program)
 {
 	for (Mesh m : meshes) {
-		m.draw();
+		m.draw(program);
 	}
 }
 
@@ -90,7 +89,7 @@ void Model::load_node(aiNode* node, const aiScene* scene)
 			aiMaterial* ai_material = scene->mMaterials[ai_mesh->mMaterialIndex];
 			std::vector < std::pair<aiTextureType, std::string >> types = { {aiTextureType_DIFFUSE, "diffuse"}, {aiTextureType_SPECULAR, "specular"} };
 			
-			material = std::make_shared<Material>(ai_material, types, program, directory);
+			material = std::make_shared<Material>(ai_material, types, directory);
 			materials.at(ai_mesh->mMaterialIndex) = material;
 		}
 		else {

@@ -1,10 +1,12 @@
 #include "Material.h"
 
+#include <unordered_map>
+
 // the same material can be used by multiple meshes
 // could add optimization such that multiple materials share the same texture
 
-Material::Material(aiMaterial* material, std::vector<std::pair<aiTextureType, std::string>> types, std::shared_ptr<Program> program, std::string dir)
-	: program {program}, directory {dir}
+Material::Material(aiMaterial* material, std::vector<std::pair<aiTextureType, std::string>> types, std::string dir)
+	: directory {dir}
 {
 	unsigned int size = 0;
 	for (std::pair<aiTextureType, std::string> type : types)
@@ -19,35 +21,61 @@ Material::Material(aiMaterial* material, std::vector<std::pair<aiTextureType, st
 			material->GetTexture(type.first, i, &name);
 			Texture texture;
 
-			texture.ID = load_texutre_from_file(name.C_Str());
+			texture.ID = load_texture_relative(name.C_Str());
 			texture.name = type.second + "_" + std::to_string(i);
 
 			textures.at(idx++) = texture;
 		}
 	}
-
-	set_uniforms();
 }
 
-void Material::set_uniforms()
+Material::Material(std::vector<std::pair<std::string, std::string>> texture_list, std::string dir)
+	: directory{ dir }
 {
-	program->use();
+	textures = std::vector<Texture>(texture_list.size());
+	std::unordered_map<std::string, unsigned int> counters; // counts the number of already existing textures for each type (diffuse, specular, etc.)
 
-	for (int i = 0; i < textures.size(); i++) {
-		Texture t = textures.at(i);
-		program->set1i(("mat." + t.name).c_str(), i);
+	for (unsigned int i = 0; i < textures.size(); i++) {
+		std::pair<std::string, std::string> t = texture_list.at(i);
+
+		Texture texture;
+
+		texture.ID = load_texture_relative(t.second.c_str());
+		
+		unsigned int c;
+		if (counters.find(t.first) == counters.end()) {
+			counters[t.first] = 0;
+			c = 0;
+		}
+		else {
+			c = ++counters[t.first];
+		}
+
+		texture.name = t.first + "_" + std::to_string(c);
+
+		textures.at(i) = texture;
 	}
 }
 
-unsigned int Material::load_texutre_from_file(const char* path)
+void Material::set_uniforms(Program& program)
+{
+	program.use();
+
+	for (int i = 0; i < textures.size(); i++) {
+		Texture t = textures.at(i);
+		program.set1i(("mat." + t.name).c_str(), i);
+	}
+}
+
+unsigned int Material::load_texture_relative(const char* path)
 {
 	std::string full_path = directory + '/' + std::string(path);
 	return loadTexture(full_path);
 }
 
-void Material::use()
+void Material::use(Program& program)
 {
-	program->use();
+	set_uniforms(program);
 	
 	for (int i = 0; i < textures.size(); i++) {
 		Texture t = textures.at(i);

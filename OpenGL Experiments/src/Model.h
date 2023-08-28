@@ -15,8 +15,8 @@
 class Model
 {
 public:
-	Model(std::string path, std::shared_ptr<Program> program);
-	void draw();
+	Model(std::string path);
+	void draw(Program& program);
 
 private:
 	std::shared_ptr<Program> program;

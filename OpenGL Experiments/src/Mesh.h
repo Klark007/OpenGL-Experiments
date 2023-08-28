@@ -20,7 +20,7 @@ class Mesh
 {
 public:
 	Mesh(std::vector<Vertex> vertices, std::vector<index> indices, std::shared_ptr<Material> material);
-	void draw();
+	void draw(Program& program);
 
 private:
 	std::vector<Vertex> vertices;

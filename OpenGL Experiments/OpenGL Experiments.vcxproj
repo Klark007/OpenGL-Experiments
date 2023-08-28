@@ -38,16 +38,18 @@
     <ClInclude Include="src\Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\base.vs" />
-    <None Include="shaders\mvp.vs" />
+    <None Include="shaders\depth.vs" />
+    <None Include="shaders\depth.fs" />
+    <None Include="shaders\Old\base.vs" />
+    <None Include="shaders\Old\mvp.vs" />
     <None Include="shaders\phong.fs" />
     <None Include="shaders\phong.vs" />
-    <None Include="shaders\uniform_color.fs" />
+    <None Include="shaders\Old\uniform_color.fs" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="shaders\depth_color.fs" />
-    <Text Include="shaders\texture.vs" />
-    <Text Include="shaders\texture.fs" />
+    <Text Include="shaders\Old\depth_color.fs" />
+    <Text Include="shaders\Old\texture.vs" />
+    <Text Include="shaders\Old\texture.fs" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\container_diffuse.png" />

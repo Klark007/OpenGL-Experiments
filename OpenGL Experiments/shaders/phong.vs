@@ -6,17 +6,20 @@ layout (location = 2) in vec2 uv;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 light_space;
 
 out vec3 w_position;
 out vec3 w_normal;
 out vec2 tex_coord;
+out vec4 light_frag_pos;
 
 void main() 
 {
-	gl_Position = projection * view * model * vec4(pos.x, pos.y, pos.z, 1.0);
-	
 	// send world space vertex positions and normals
 	w_position = vec3(model * vec4(pos, 1.0));
 	w_normal   = mat3(transpose(inverse(model))) * normal;
 	tex_coord  = uv;
+	light_frag_pos = light_space * vec4(w_position, 1.0);
+
+	gl_Position = projection * view * vec4(w_position, 1.0);
 }
