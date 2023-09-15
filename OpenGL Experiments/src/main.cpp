@@ -204,8 +204,8 @@ int main()
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
-	float slope_scale_bias = 0.8f;
-	float constant_bias = 5.0f;
+	float slope_scale_bias = 2.5f;
+	float constant_bias = 7.0f;
 
 	while (!glfwWindowShouldClose(window))
 	{
