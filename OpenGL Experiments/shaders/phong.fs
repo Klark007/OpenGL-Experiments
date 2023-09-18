@@ -8,12 +8,15 @@ struct Material {
 };
 uniform Material mat;
 
+#define NR_SHADOW_SAMPLES 16
 struct Light {
 	vec3 pos;
 	vec3 diffuse;
 	vec3 specular;
 
 	sampler2D shadow_map;
+	vec2 shadow_samples[NR_SHADOW_SAMPLES];
+	int shadow_mode;
 };
 uniform Light light;
 
@@ -24,11 +27,21 @@ in vec3 w_normal;
 in vec2 tex_coord;
 in vec4 light_frag_pos;
 
+float gold_noise(in vec2 xy, in float seed);
+mat3 rotate_z(float theta);
+
 // checks if light_frag_pos is shadowed by light source
 // returns 1.0 if in shadow
 float in_shadow(vec3 tex_c) {
 	
 	return (tex_c.z > texture(light.shadow_map, tex_c.xy).r) ? 1.0 : 0.0;
+}
+
+float in_hard_shadow() {
+	vec4 shadow_tex_coord = light_frag_pos / light_frag_pos.w;
+	shadow_tex_coord = shadow_tex_coord / 2 + 0.5;
+
+	return in_shadow(shadow_tex_coord.xyz);
 }
 
 float in_soft_shadow() {
@@ -38,9 +51,27 @@ float in_soft_shadow() {
 	float soft_shadow_average = 0.0;
 	vec2 texel_size = 1.0 / textureSize(light.shadow_map, 0);
 	
-	for (float y = -1.5; y <= 1.5; y += 1.0) {
-		for (float x = -1.5; x <= 1.5; x += 1.0) {
-			soft_shadow_average += in_shadow(shadow_tex_coord.xyz + vec3(x * texel_size.x,y * texel_size.y,0));
+	// samples relative -1.5 to 1.5 from center of pixel in both x and y
+	if (light.shadow_mode == 0) {
+		soft_shadow_average = in_shadow(shadow_tex_coord.xyz) * 16.0;
+	} else if (light.shadow_mode == 1) {
+		for (float y = -1.5; y <= 1.5; y += 1.0) {
+			for (float x = -1.5; x <= 1.5; x += 1.0) {
+				soft_shadow_average += in_shadow(shadow_tex_coord.xyz + vec3(x * texel_size.x,y * texel_size.y,0));
+			}
+		}
+	} else if (light.shadow_mode == 2) {
+		for (int i = 0; i < NR_SHADOW_SAMPLES; i++) {
+			soft_shadow_average += in_shadow(shadow_tex_coord.xyz + vec3((light.shadow_samples[i].x - 1.5) * texel_size.x,(light.shadow_samples[i].y - 1.5) * texel_size.y,0));
+		}
+	} else if (light.shadow_mode == 3) {
+		for (int i = 0; i < NR_SHADOW_SAMPLES; i++) {
+			vec3 offset = vec3((light.shadow_samples[i].x - 1.5) * texel_size.x,(light.shadow_samples[i].y - 1.5) * texel_size.y,0);
+
+			//float seed = float(xor_shift(int(pow(2,gl_FragCoord.x*800) + pow(3,gl_FragCoord.y*600))));
+			float seed = gold_noise(gl_FragCoord.xy, 3.74687876);
+			mat3 rotation = rotate_z(mod(seed, 2*3.14159));
+			soft_shadow_average += in_shadow(shadow_tex_coord.xyz + rotation*offset);
 		}
 	}
 	
@@ -63,3 +94,27 @@ void main()
 	
 	FragColor = vec4(light_color, 1.0);
 }
+
+float PHI = 1.61803398874989484820459; 
+float gold_noise(in vec2 xy, in float seed){
+       return fract(tan(distance(xy*PHI, xy)*seed)*xy.x);
+}
+
+mat3 rotate_z(float theta) {
+	mat3 res; // access column first
+	res[0] = vec3(cos(theta), sin(theta), 0);
+	res[1] = vec3(-sin(theta), cos(theta), 0);
+	res[2][2] = 1.0;
+	return res;
+}
+/*
+mat3 rotate_z(float theta) {
+	mat3 res; // access column first
+	res[0][0] = cos(theta);
+	res[0][1] = sin(theta);
+	res[1][0] = -sin(theta);
+	res[1][1] = cos(theta);
+	res[2][2] = 1.0;
+	return res;
+}
+*/

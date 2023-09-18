@@ -17,7 +17,8 @@
 #include "program.h"
 #include "Camera.h"
 
-
+#include "sampling/fdps.h"
+#define NR_SHADOW_SAMPLES 16
 
 #include <iostream>
 #include <memory>
@@ -31,6 +32,15 @@ int screen_x = 800;
 int screen_y = 600;
 
 Camera camera = { glm::vec3(0.0, 2.0, 4.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0) };
+
+enum SampleMode
+{
+	HARD=0,
+	UNIFORM=1,
+	POISSON=2,
+	POISSON_ROT=3,
+};
+SampleMode shadow_sampling_mode = SampleMode::UNIFORM;
 
 int main()
 {
@@ -150,8 +160,8 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, shadow_texture);
 
 	// different resolution than window
-	unsigned int shadow_resolution_x = 1024;
-	unsigned int shadow_resolution_y = 1024;
+	unsigned int shadow_resolution_x = 1024/2;
+	unsigned int shadow_resolution_y = 1024/2;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_resolution_x, shadow_resolution_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*) 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -202,6 +212,19 @@ int main()
 	program.set_mat4f("light_space", light_space);
 	program.set1i("light.shadow_map", 2);
 
+	// shadow map sampling pattern (16 samples)
+	std::vector<glm::vec2> shadow_samples = fpds::fast_poisson_disk_2d({3.0,3.0}, 0.5f);
+	while (shadow_samples.size() < NR_SHADOW_SAMPLES) {
+		shadow_samples = fpds::fast_poisson_disk_2d({ 3.0,3.0 }, 0.5f);
+	}
+
+	for (unsigned int i = 0; i < shadow_samples.size(); i++) {
+		std::string name = "light.shadow_samples[" + std::to_string(i) + "]";
+		program.set_vec2f(name.c_str(), shadow_samples[i]);
+	}
+
+	std::cout << "Shadow samples generated: " << shadow_samples.size() << std::endl;
+
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
 	float slope_scale_bias = 2.5f;
@@ -236,6 +259,8 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		program.use();
+
+		program.set1i("light.shadow_mode", shadow_sampling_mode);
 
 		glPolygonOffset(0.0f, 0.0f);
 
@@ -322,6 +347,20 @@ void handle_input(GLFWwindow* window)
 		dy += 1;
 	if (glfwGetKey(window, GLFW_KEY_A))
 		dy -= 1;
+
+	// change shadow sampling mode
+	if (glfwGetKey(window, GLFW_KEY_0)) {
+		shadow_sampling_mode = SampleMode::HARD;
+	}
+	if (glfwGetKey(window, GLFW_KEY_1)) {
+		shadow_sampling_mode = SampleMode::UNIFORM;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2)) {
+		shadow_sampling_mode = SampleMode::POISSON;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3)) {
+		shadow_sampling_mode = SampleMode::POISSON_ROT;
+	}
 
 	glm::vec3 pos = camera.get_pos();
 	glm::vec3 dir = camera.get_dir();
