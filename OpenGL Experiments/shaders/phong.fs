@@ -9,6 +9,7 @@ struct Material {
 uniform Material mat;
 
 #define NR_SHADOW_SAMPLES 16
+#define NR_OCCLUDER_SAMPLES 4
 struct Light {
 	vec3 pos;
 	vec3 diffuse;
@@ -16,7 +17,7 @@ struct Light {
 
 	sampler2D shadow_map;
 	vec2 shadow_samples[NR_SHADOW_SAMPLES];
-	vec2 occluder_sample;
+	vec2 occluder_samples[NR_OCCLUDER_SAMPLES];
 	float width;
 
 	int shadow_mode;
@@ -85,8 +86,14 @@ float pcf(vec4 shadow_coord, float width, vec2 texel_size) {
 }
 
 float sample_occluder(vec2 tex_c, vec2 texel_size) {
-	vec2 tex_coord = tex_c + light.occluder_sample * texel_size;
-	return occluder_distance(tex_coord);
+	float occluder_avg = 0.0;
+
+	for (int i = 0; i < NR_OCCLUDER_SAMPLES; i++) {
+		vec2 tex_coord = tex_c + light.occluder_samples[i] * texel_size;
+		occluder_avg += occluder_distance(tex_coord);
+	}
+	
+	return occluder_avg / NR_OCCLUDER_SAMPLES;
 }
 
 float in_soft_shadow() {

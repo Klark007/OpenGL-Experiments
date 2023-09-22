@@ -19,6 +19,7 @@
 
 #include "sampling/fdps.h"
 #define NR_SHADOW_SAMPLES 16
+#define NR_OCCLUDER_SAMPLES 4
 
 #include <iostream>
 #include <memory>
@@ -212,23 +213,28 @@ int main()
 	program.use();
 	program.set_mat4f("light_space", light_space);
 	program.set1i("light.shadow_map", 2);
-	program.set1f("light.width", 50.0);
+	program.set1f("light.width", 20.0);
 
 	// shadow map sampling pattern (16 samples)
 	std::vector<glm::vec2> shadow_samples = fpds::fast_poisson_disk_2d({1.0,1.0}, 0.2f);
 	while (shadow_samples.size() < NR_SHADOW_SAMPLES) {
 		shadow_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2f);
 	}
-
-	for (unsigned int i = 0; i < shadow_samples.size(); i++) {
+	for (unsigned int i = 0; i < NR_SHADOW_SAMPLES; i++) {
 		std::string name = "light.shadow_samples[" + std::to_string(i) + "]";
 		program.set_vec2f(name.c_str(), shadow_samples[i]);
 	}
 
 	std::cout << "Shadow samples generated: " << shadow_samples.size() << std::endl;
 
-	std::vector<glm::vec2> occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 1.2f, 1);
-	program.set_vec2f("light.occluder_sample", occluder_samples[0]);
+	std::vector<glm::vec2> occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.4);
+	while (shadow_samples.size() < NR_OCCLUDER_SAMPLES) {
+		occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2f);
+	}
+	for (unsigned int i = 0; i < NR_OCCLUDER_SAMPLES; i++) {
+		std::string name = "light.occluder_samples[" + std::to_string(i) + "]";
+		program.set_vec2f(name.c_str(), occluder_samples[i]);
+	}
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
