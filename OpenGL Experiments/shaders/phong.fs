@@ -16,7 +16,11 @@ struct Light {
 
 	sampler2D shadow_map;
 	vec2 shadow_samples[NR_SHADOW_SAMPLES];
+	vec2 occluder_sample;
+	float width;
+
 	int shadow_mode;
+	int pcss;
 };
 uniform Light light;
 
@@ -30,11 +34,15 @@ in vec4 light_frag_pos;
 float gold_noise(in vec2 xy, in float seed);
 mat3 rotate_z(float theta);
 
+float occluder_distance(vec2 tex_c) {
+	 return texture(light.shadow_map, tex_c.xy).r;
+}
+
 // checks if light_frag_pos is shadowed by light source
 // returns 1.0 if in shadow
 float in_shadow(vec3 tex_c) {
 	
-	return (tex_c.z > texture(light.shadow_map, tex_c.xy).r) ? 1.0 : 0.0;
+	return (tex_c.z > occluder_distance(tex_c.xy)) ? 1.0 : 0.0;
 }
 
 float in_hard_shadow() {
@@ -44,38 +52,80 @@ float in_hard_shadow() {
 	return in_shadow(shadow_tex_coord.xyz);
 }
 
-float in_soft_shadow() {
-	vec4 shadow_tex_coord = light_frag_pos / light_frag_pos.w;
-	shadow_tex_coord = shadow_tex_coord / 2 + 0.5;
-
+float pcf(vec4 shadow_coord, float width, vec2 texel_size) {
 	float soft_shadow_average = 0.0;
-	vec2 texel_size = 1.0 / textureSize(light.shadow_map, 0);
 	
-	// samples relative -1.5 to 1.5 from center of pixel in both x and y
 	if (light.shadow_mode == 0) {
-		soft_shadow_average = in_shadow(shadow_tex_coord.xyz) * 16.0;
+		soft_shadow_average = in_shadow(shadow_coord.xyz) * NR_SHADOW_SAMPLES;
 	} else if (light.shadow_mode == 1) {
-		for (float y = -1.5; y <= 1.5; y += 1.0) {
-			for (float x = -1.5; x <= 1.5; x += 1.0) {
-				soft_shadow_average += in_shadow(shadow_tex_coord.xyz + vec3(x * texel_size.x,y * texel_size.y,0));
+		// samples regular grid from -width/2 to width/2 from center of pixel in both x and y
+		float step_size = width / (sqrt(float(NR_SHADOW_SAMPLES))-1);
+
+		// add step_size/2 to account for small floating point error, could also be something like 1e-5
+		for (float y = -width/2; y <= width/2+step_size/2; y += step_size) {
+			for (float x = -width/2; x <= width/2+step_size/2; x += step_size) {
+				soft_shadow_average += in_shadow(shadow_coord.xyz + vec3(x * texel_size.x,y * texel_size.y,0));
 			}
 		}
 	} else if (light.shadow_mode == 2) {
 		for (int i = 0; i < NR_SHADOW_SAMPLES; i++) {
-			soft_shadow_average += in_shadow(shadow_tex_coord.xyz + vec3((light.shadow_samples[i].x - 1.5) * texel_size.x,(light.shadow_samples[i].y - 1.5) * texel_size.y,0));
+			soft_shadow_average += in_shadow(shadow_coord.xyz + vec3((light.shadow_samples[i].x*width - width/2) * texel_size.x,(light.shadow_samples[i].y*width - width/2) * texel_size.y,0));
 		}
 	} else if (light.shadow_mode == 3) {
 		for (int i = 0; i < NR_SHADOW_SAMPLES; i++) {
-			vec3 offset = vec3((light.shadow_samples[i].x - 1.5) * texel_size.x,(light.shadow_samples[i].y - 1.5) * texel_size.y,0);
+			vec3 offset = vec3((light.shadow_samples[i].x*width - width/2) * texel_size.x,(light.shadow_samples[i].y*width - width/2) * texel_size.y,0);
 
-			//float seed = float(xor_shift(int(pow(2,gl_FragCoord.x*800) + pow(3,gl_FragCoord.y*600))));
 			float seed = gold_noise(gl_FragCoord.xy, 3.74687876);
 			mat3 rotation = rotate_z(mod(seed, 2*3.14159));
-			soft_shadow_average += in_shadow(shadow_tex_coord.xyz + rotation*offset);
+			soft_shadow_average += in_shadow(shadow_coord.xyz + rotation*offset);
 		}
 	}
 	
-	return soft_shadow_average / 16.0;
+	return soft_shadow_average / NR_SHADOW_SAMPLES;
+}
+
+float sample_occluder(vec2 tex_c, vec2 texel_size) {
+	vec2 tex_coord = tex_c + light.occluder_sample * texel_size;
+	return occluder_distance(tex_coord);
+}
+
+float in_soft_shadow() {
+	vec4 shadow_tex_coord = light_frag_pos / light_frag_pos.w;
+	shadow_tex_coord = shadow_tex_coord / 2 + 0.5;
+	vec2 texel_size = 1.0 / textureSize(light.shadow_map, 0);
+
+	float d_O = sample_occluder(shadow_tex_coord.xy, texel_size);
+	float d_R = shadow_tex_coord.z;
+
+	float width;
+	if (light.pcss == 1) {
+		if (d_R <= d_O) {
+			return 0.0;
+		}
+
+		width = (d_R - d_O) * light.width / d_O;
+	} else {
+		width = 3.0;
+	}
+
+
+	return pcf(shadow_tex_coord, width, texel_size);
+}
+
+float width_debugging() {
+	vec4 shadow_tex_coord = light_frag_pos / light_frag_pos.w;
+	shadow_tex_coord = shadow_tex_coord / 2 + 0.5;
+	vec2 texel_size = 1.0 / textureSize(light.shadow_map, 0);
+
+	float d_O = sample_occluder(shadow_tex_coord.xy, texel_size);
+	float d_R = shadow_tex_coord.z;
+
+	if (d_R <= d_O) {
+		return 0.0;
+	}
+
+	float width = (d_R - d_O) * light.width / d_O;
+	return width;
 }
 
 void main()
@@ -90,8 +140,9 @@ void main()
 	vec3 reflected = reflect(-light_dir, normal);
 	vec3 specular  = vec3(texture(mat.specular_0, tex_coord)) * pow(max(dot(reflected, view_dir), 0.0), mat.shininess) * light.specular; // reflect expects from light to vertex
 
-	vec3 light_color = 0.5*ambient + (1.0-in_soft_shadow()) * (diffuse + specular);
+	vec3 light_color = 0.2*ambient + (1.0-in_soft_shadow()) * (diffuse + specular);
 	
+	//FragColor = vec4(width_debugging() / 10.0, 0.0, 0.0, 1.0);
 	FragColor = vec4(light_color, 1.0);
 }
 
@@ -107,14 +158,3 @@ mat3 rotate_z(float theta) {
 	res[2][2] = 1.0;
 	return res;
 }
-/*
-mat3 rotate_z(float theta) {
-	mat3 res; // access column first
-	res[0][0] = cos(theta);
-	res[0][1] = sin(theta);
-	res[1][0] = -sin(theta);
-	res[1][1] = cos(theta);
-	res[2][2] = 1.0;
-	return res;
-}
-*/

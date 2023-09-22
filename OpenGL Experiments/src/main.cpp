@@ -41,6 +41,7 @@ enum SampleMode
 	POISSON_ROT=3,
 };
 SampleMode shadow_sampling_mode = SampleMode::UNIFORM;
+bool use_pcss = false;
 
 int main()
 {
@@ -160,8 +161,8 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, shadow_texture);
 
 	// different resolution than window
-	unsigned int shadow_resolution_x = 1024/2;
-	unsigned int shadow_resolution_y = 1024/2;
+	unsigned int shadow_resolution_x = 1024;
+	unsigned int shadow_resolution_y = 1024;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_resolution_x, shadow_resolution_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*) 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -211,11 +212,12 @@ int main()
 	program.use();
 	program.set_mat4f("light_space", light_space);
 	program.set1i("light.shadow_map", 2);
+	program.set1f("light.width", 50.0);
 
 	// shadow map sampling pattern (16 samples)
-	std::vector<glm::vec2> shadow_samples = fpds::fast_poisson_disk_2d({3.0,3.0}, 0.5f);
+	std::vector<glm::vec2> shadow_samples = fpds::fast_poisson_disk_2d({1.0,1.0}, 0.2f);
 	while (shadow_samples.size() < NR_SHADOW_SAMPLES) {
-		shadow_samples = fpds::fast_poisson_disk_2d({ 3.0,3.0 }, 0.5f);
+		shadow_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2f);
 	}
 
 	for (unsigned int i = 0; i < shadow_samples.size(); i++) {
@@ -224,6 +226,9 @@ int main()
 	}
 
 	std::cout << "Shadow samples generated: " << shadow_samples.size() << std::endl;
+
+	std::vector<glm::vec2> occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 1.2f, 1);
+	program.set_vec2f("light.occluder_sample", occluder_samples[0]);
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -261,6 +266,7 @@ int main()
 		program.use();
 
 		program.set1i("light.shadow_mode", shadow_sampling_mode);
+		program.set1i("light.pcss", use_pcss);
 
 		glPolygonOffset(0.0f, 0.0f);
 
@@ -360,6 +366,12 @@ void handle_input(GLFWwindow* window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_3)) {
 		shadow_sampling_mode = SampleMode::POISSON_ROT;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Q)) {
+		use_pcss = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_E)) {
+		use_pcss = false;
 	}
 
 	glm::vec3 pos = camera.get_pos();
