@@ -5,9 +5,26 @@ Program::Program()
 	program = glCreateProgram();
 }
 
+Program::Program(std::vector<std::shared_ptr<Shader>>& shaders)
+{
+	program = glCreateProgram();
+
+	for (std::shared_ptr<Shader> s : shaders) {
+		attach_shader(s->get_id());
+	}
+
+	link_program();
+	print_link_error();
+}
+
 Program::~Program()
 {
 	glDeleteProgram(program);
+}
+
+void Program::attach_shader(unsigned int id)
+{
+	glAttachShader(program, id);
 }
 
 void Program::attach_shader(Shader& shader)
@@ -37,6 +54,7 @@ void Program::print_link_error()
 	if (status != GL_TRUE) {
 		glGetProgramInfoLog(program, LOG_LENGTH, NULL, log);
 		std::cerr << "PROGRAMM LINKING FAILED:" << log << std::endl;
+		std::cerr << status << std::endl;
 	}
 }
 

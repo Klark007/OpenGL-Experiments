@@ -6,14 +6,19 @@
 
 #include "Shader.h"
 
+#include <vector>
+#include <memory>
+
 #define LOG_LENGTH 512
 
 class Program
 {
 public:
 	Program();
+	Program(std::vector<std::shared_ptr<Shader>>& shaders);
 	~Program();
 
+	void attach_shader(unsigned int id);
 	void attach_shader(Shader& shader);
 	void link_program();
 
