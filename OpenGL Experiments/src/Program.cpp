@@ -50,6 +50,16 @@ void Program::set1f(const char* name, float value)
 	glUniform1f(get_location(name), value);
 }
 
+void Program::set_vec2f(const char* name, glm::vec2& value)
+{
+	glUniform2fv(get_location(name), 1, glm::value_ptr(value));
+}
+
+void Program::set_vec2f(const char* name, float x, float y)
+{
+	glUniform2f(get_location(name), x, y);
+}
+
 void Program::set_vec3f(const char* name, glm::vec3& value)
 {
 	glUniform3fv(get_location(name), 1, glm::value_ptr(value));

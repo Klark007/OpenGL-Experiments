@@ -35,6 +35,7 @@
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Program.h" />
+    <ClInclude Include="src\sampling\fdps.h" />
     <ClInclude Include="src\Shader.h" />
   </ItemGroup>
   <ItemGroup>
@@ -45,6 +46,7 @@
     <None Include="shaders\phong.fs" />
     <None Include="shaders\phong.vs" />
     <None Include="shaders\Old\uniform_color.fs" />
+    <None Include="shaders\phong_soft_shadows.fs" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />

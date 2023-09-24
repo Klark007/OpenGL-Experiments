@@ -62,6 +62,9 @@
     <ClInclude Include="resource.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\sampling\fdps.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Old\base.vs" />
@@ -71,6 +74,7 @@
     <None Include="shaders\phong.vs" />
     <None Include="shaders\depth.vs" />
     <None Include="shaders\depth.fs" />
+    <None Include="shaders\phong_soft_shadows.fs" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />
