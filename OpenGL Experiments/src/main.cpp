@@ -41,8 +41,8 @@ enum SampleMode
 	POISSON=2,
 	POISSON_ROT=3,
 };
-SampleMode shadow_sampling_mode = SampleMode::UNIFORM;
-bool use_pcss = false;
+SampleMode shadow_sampling_mode = SampleMode::POISSON_ROT;
+bool use_pcss = true;
 
 int main()
 {
@@ -58,7 +58,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Experiments", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(screen_x, screen_y, "OpenGL Experiments", NULL, NULL);
 
 	if (!window) {
 		std::cerr << "GLFW Window creation failed" << std::endl;
@@ -101,7 +101,7 @@ int main()
 		{glm::vec3(1.0,0.0,1.0), glm::vec3(0.0,1.0,0.0), glm::vec2(1.0,1.0)}
 	};
 	std::vector<unsigned int> indices = { 0,1,2,1,3,2 };
-	std::shared_ptr<Material> material = std::make_shared<Material>(std::vector<std::pair<std::string, std::string>> { {"diffuse", "container_diffuse.png"}, {"specular", "container_specular.png"}}, "textures");
+	std::shared_ptr<Material> material = std::make_shared<Material>(std::vector<std::pair<std::string, std::string>> { {"diffuse", "white.png"}, {"specular", "container_specular.png"}}, "textures");
 	Mesh ground_plane {vertices, indices, material};
 	glm::mat4 ground_model = glm::mat4(1.0);
 	ground_model = glm::translate(ground_model, glm::vec3(-5, -1.8, -5));
@@ -137,7 +137,6 @@ int main()
 	program.set_mat4f("view", view);
 	program.set_mat4f("projection", projection);
 
-	// potential driver bug with texture unit 0 being used if active
 	program.set1i("mat.diffuse_0", 0);
 	program.set1i("mat.specular_0", 1);
 
@@ -270,6 +269,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		program.use();
+		program.set1f("time", glfwGetTime());
 
 		program.set1i("light.shadow_mode", shadow_sampling_mode);
 		program.set1i("light.pcss", use_pcss);

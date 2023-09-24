@@ -27,6 +27,8 @@ uniform Light light;
 
 uniform vec3 camera_pos;
 
+uniform float time;
+
 in vec3 w_position;
 in vec3 w_normal;
 in vec2 tex_coord;
@@ -76,8 +78,10 @@ float pcf(vec4 shadow_coord, float width, vec2 texel_size) {
 		for (int i = 0; i < NR_SHADOW_SAMPLES; i++) {
 			vec3 offset = vec3((light.shadow_samples[i].x*width - width/2) * texel_size.x,(light.shadow_samples[i].y*width - width/2) * texel_size.y,0);
 
-			float seed = gold_noise(gl_FragCoord.xy, 3.74687876);
-			mat3 rotation = rotate_z(mod(seed, 2*3.14159));
+			float seed = 0.74687876; //  fract(time)
+			float rand = gold_noise(gl_FragCoord.xy, seed); // gold_noise(vec2(581.5, 508.5), seed);
+			mat3 rotation = rotate_z(mod(rand, 2.0*3.14159));
+
 			soft_shadow_average += in_shadow(shadow_coord.xyz + rotation*offset);
 		}
 	}
@@ -119,20 +123,37 @@ float in_soft_shadow() {
 	return pcf(shadow_tex_coord, width, texel_size);
 }
 
-float width_debugging() {
-	vec4 shadow_tex_coord = light_frag_pos / light_frag_pos.w;
-	shadow_tex_coord = shadow_tex_coord / 2 + 0.5;
+vec3 debug_rotation() {
+	/*
+	float width = 3.0;
 	vec2 texel_size = 1.0 / textureSize(light.shadow_map, 0);
 
-	float d_O = sample_occluder(shadow_tex_coord.xy, texel_size);
-	float d_R = shadow_tex_coord.z;
+	float error = 0.0;
+	for (int i = 0; i < NR_SHADOW_SAMPLES; i++) {
+		vec3 offset = vec3((light.shadow_samples[i].x*width - width/2),(light.shadow_samples[i].y*width - width/2),0);
 
-	if (d_R <= d_O) {
-		return 0.0;
+		float seed = 0.74687876; //  fract(time)
+		float rand = gold_noise(vec2(581.5, 508.5), seed);
+
+		mat3 rotation = rotate_z(mod(rand, 2*3.14159));
+		vec3 offset2 = rotation*offset;
+
+		if (offset2.z != 0 || length(offset2) - length(offset) > 1e-5) {
+			error = 1.0;
+		}
 	}
+	*/
+	vec2 v = vec2(581.5, 508.5);
+	float PHI = 1.61803398874989484820459; 
 
-	float width = (d_R - d_O) * light.width / d_O;
-	return width;
+	float seed = 0.74687876; //  fract(time)
+	float rand = gold_noise(v, seed);
+	
+	if (isnan(rand)) {
+		return vec3(0.5, 0.0, 0.0);
+	} else {
+		return vec3(0.0, 0.0, 0.0);
+	}
 }
 
 void main()
@@ -149,13 +170,19 @@ void main()
 
 	vec3 light_color = 0.2*ambient + (1.0-in_soft_shadow()) * (diffuse + specular);
 	
-	//FragColor = vec4(width_debugging() / 10.0, 0.0, 0.0, 1.0);
+	//FragColor = vec4(debug_rotation(), 1.0);
 	FragColor = vec4(light_color, 1.0);
 }
 
+float PI  = 3.14159265358979323846264;
 float PHI = 1.61803398874989484820459; 
 float gold_noise(in vec2 xy, in float seed){
-       return fract(tan(distance(xy*PHI, xy)*seed)*xy.x);
+	// from 
+	if (mod(distance(xy*PHI, xy)*seed, PI/2.0) < 1e-5 || PI/2.0 - mod(distance(xy*PHI, xy)*seed, PI/2.0) < 1e-5) {
+		return fract(tan(distance(xy*PHI, xy)*seed + PI/4.0)*xy.x);
+	} else {
+		return fract(tan(distance(xy*PHI, xy)*seed)*xy.x);
+	}
 }
 
 mat3 rotate_z(float theta) {
