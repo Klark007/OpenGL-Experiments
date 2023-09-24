@@ -26,6 +26,17 @@ in vec3 w_normal;
 in vec2 tex_coord;
 in vec4 light_frag_pos;
 
+float occluder_distance(vec2 tex_c) {
+	 return texture(light.shadow_map, tex_c.xy).r;
+}
+
+// checks if light_frag_pos is shadowed by light source
+// returns 1.0 if in shadow
+float in_shadow(vec3 tex_c) {
+	
+	return (tex_c.z > occluder_distance(tex_c.xy)) ? 1.0 : 0.0;
+}
+
 float in_hard_shadow() {
 	vec4 shadow_tex_coord = light_frag_pos / light_frag_pos.w;
 	shadow_tex_coord = shadow_tex_coord / 2 + 0.5;

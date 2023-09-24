@@ -34,15 +34,6 @@ int screen_y = 600;
 
 Camera camera = { glm::vec3(0.0, 2.0, 4.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0) };
 
-enum SampleMode
-{
-	HARD=0,
-	UNIFORM=1,
-	POISSON=2,
-	POISSON_ROT=3,
-};
-SampleMode shadow_sampling_mode = SampleMode::POISSON_ROT;
-bool use_pcss = true;
 bool can_move = true;
 
 int main()
@@ -118,7 +109,7 @@ int main()
 
 	Shader fragment_shader{ GL_FRAGMENT_SHADER };
 	std::cout << "Fragment shader compilation" << std::endl;
-	fragment_shader.add_source_from_file("shaders/phong_soft_shadows.fs");
+	fragment_shader.add_source_from_file("shaders/phong.fs");
 	fragment_shader.compile();
 	fragment_shader.print_compile_error();
 
@@ -213,28 +204,6 @@ int main()
 	program.use();
 	program.set_mat4f("light_space", light_space);
 	program.set1i("light.shadow_map", 2);
-	program.set1f("light.width", 50.0);
-
-	// shadow map sampling pattern (16 samples)
-	std::vector<glm::vec2> shadow_samples = fpds::fast_poisson_disk_2d({1.0,1.0}, 0.2f);
-	while (shadow_samples.size() < NR_SHADOW_SAMPLES) {
-		shadow_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2f);
-	}
-	for (unsigned int i = 0; i < NR_SHADOW_SAMPLES; i++) {
-		std::string name = "light.shadow_samples[" + std::to_string(i) + "]";
-		program.set_vec2f(name.c_str(), shadow_samples[i]);
-	}
-
-	std::cout << "Shadow samples generated: " << shadow_samples.size() << std::endl;
-
-	std::vector<glm::vec2> occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2);
-	while (shadow_samples.size() < NR_OCCLUDER_SAMPLES) {
-		occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2f);
-	}
-	for (unsigned int i = 0; i < NR_OCCLUDER_SAMPLES; i++) {
-		std::string name = "light.occluder_samples[" + std::to_string(i) + "]";
-		program.set_vec2f(name.c_str(), occluder_samples[i]);
-	}
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -271,9 +240,6 @@ int main()
 
 		program.use();
 		program.set1f("time", glfwGetTime());
-
-		program.set1i("light.shadow_mode", shadow_sampling_mode);
-		program.set1i("light.pcss", use_pcss);
 
 		glPolygonOffset(0.0f, 0.0f);
 
@@ -350,26 +316,6 @@ void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 
 void handle_input(GLFWwindow* window)
 {
-	// change shadow sampling mode
-	if (glfwGetKey(window, GLFW_KEY_0)) {
-		shadow_sampling_mode = SampleMode::HARD;
-	}
-	if (glfwGetKey(window, GLFW_KEY_1)) {
-		shadow_sampling_mode = SampleMode::UNIFORM;
-	}
-	if (glfwGetKey(window, GLFW_KEY_2)) {
-		shadow_sampling_mode = SampleMode::POISSON;
-	}
-	if (glfwGetKey(window, GLFW_KEY_3)) {
-		shadow_sampling_mode = SampleMode::POISSON_ROT;
-	}
-	if (glfwGetKey(window, GLFW_KEY_Q)) {
-		use_pcss = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_E)) {
-		use_pcss = false;
-	}
-
 	// to get comparison pictures
 	if (glfwGetKey(window, GLFW_KEY_X)) {
 		can_move = false;
@@ -394,26 +340,6 @@ void handle_input(GLFWwindow* window)
 		dy += 1;
 	if (glfwGetKey(window, GLFW_KEY_A))
 		dy -= 1;
-
-	// change shadow sampling mode
-	if (glfwGetKey(window, GLFW_KEY_0)) {
-		shadow_sampling_mode = SampleMode::HARD;
-	}
-	if (glfwGetKey(window, GLFW_KEY_1)) {
-		shadow_sampling_mode = SampleMode::UNIFORM;
-	}
-	if (glfwGetKey(window, GLFW_KEY_2)) {
-		shadow_sampling_mode = SampleMode::POISSON;
-	}
-	if (glfwGetKey(window, GLFW_KEY_3)) {
-		shadow_sampling_mode = SampleMode::POISSON_ROT;
-	}
-	if (glfwGetKey(window, GLFW_KEY_Q)) {
-		use_pcss = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_E)) {
-		use_pcss = false;
-	}
 
 	glm::vec3 pos = camera.get_pos();
 	glm::vec3 dir = camera.get_dir();
