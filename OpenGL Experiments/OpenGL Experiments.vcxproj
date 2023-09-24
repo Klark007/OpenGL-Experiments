@@ -46,6 +46,7 @@
     <None Include="shaders\phong.fs" />
     <None Include="shaders\phong.vs" />
     <None Include="shaders\Old\uniform_color.fs" />
+    <None Include="shaders\phong_soft_shadows.fs" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />

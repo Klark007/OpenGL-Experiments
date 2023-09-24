@@ -19,7 +19,7 @@
 
 #include "sampling/fdps.h"
 #define NR_SHADOW_SAMPLES 16
-#define NR_OCCLUDER_SAMPLES 4
+#define NR_OCCLUDER_SAMPLES 16
 
 #include <iostream>
 #include <memory>
@@ -43,6 +43,7 @@ enum SampleMode
 };
 SampleMode shadow_sampling_mode = SampleMode::POISSON_ROT;
 bool use_pcss = true;
+bool can_move = true;
 
 int main()
 {
@@ -117,7 +118,7 @@ int main()
 
 	Shader fragment_shader{ GL_FRAGMENT_SHADER };
 	std::cout << "Fragment shader compilation" << std::endl;
-	fragment_shader.add_source_from_file("shaders/phong.fs");
+	fragment_shader.add_source_from_file("shaders/phong_soft_shadows.fs");
 	fragment_shader.compile();
 	fragment_shader.print_compile_error();
 
@@ -212,7 +213,7 @@ int main()
 	program.use();
 	program.set_mat4f("light_space", light_space);
 	program.set1i("light.shadow_map", 2);
-	program.set1f("light.width", 20.0);
+	program.set1f("light.width", 50.0);
 
 	// shadow map sampling pattern (16 samples)
 	std::vector<glm::vec2> shadow_samples = fpds::fast_poisson_disk_2d({1.0,1.0}, 0.2f);
@@ -226,7 +227,7 @@ int main()
 
 	std::cout << "Shadow samples generated: " << shadow_samples.size() << std::endl;
 
-	std::vector<glm::vec2> occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.4);
+	std::vector<glm::vec2> occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2);
 	while (shadow_samples.size() < NR_OCCLUDER_SAMPLES) {
 		occluder_samples = fpds::fast_poisson_disk_2d({ 1.0,1.0 }, 0.2f);
 	}
@@ -318,6 +319,9 @@ void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 {
+	if (!can_move)
+		return;
+
 	const double strength = 0.001;
 	static double xlast = screen_x / 2;
 	static double ylast = screen_y / 2;
@@ -346,6 +350,37 @@ void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 
 void handle_input(GLFWwindow* window)
 {
+	// change shadow sampling mode
+	if (glfwGetKey(window, GLFW_KEY_0)) {
+		shadow_sampling_mode = SampleMode::HARD;
+	}
+	if (glfwGetKey(window, GLFW_KEY_1)) {
+		shadow_sampling_mode = SampleMode::UNIFORM;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2)) {
+		shadow_sampling_mode = SampleMode::POISSON;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3)) {
+		shadow_sampling_mode = SampleMode::POISSON_ROT;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Q)) {
+		use_pcss = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_E)) {
+		use_pcss = false;
+	}
+
+	// to get comparison pictures
+	if (glfwGetKey(window, GLFW_KEY_X)) {
+		can_move = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Y)) {
+		can_move = true;
+	}
+
+	if (!can_move)
+		return;
+
 	const float strength = 0.1f;
 	
 	float dx = 0.0f;
