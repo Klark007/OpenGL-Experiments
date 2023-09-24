@@ -14,6 +14,7 @@ class Shader
 {
 public:
 	Shader(unsigned int shader_type);
+	Shader(unsigned int shader_type, const char* path);
 	~Shader();
 
 	int  add_source_from_file(const char* path);

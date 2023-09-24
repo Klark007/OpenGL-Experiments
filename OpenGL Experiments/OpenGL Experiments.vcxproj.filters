@@ -75,6 +75,8 @@
     <None Include="shaders\depth.vs" />
     <None Include="shaders\depth.fs" />
     <None Include="shaders\phong_soft_shadows.fs" />
+    <None Include="shaders\volume.fs" />
+    <None Include="shaders\volume.vs" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />

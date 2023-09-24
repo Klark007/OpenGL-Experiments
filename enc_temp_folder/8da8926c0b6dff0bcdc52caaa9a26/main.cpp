@@ -106,6 +106,24 @@ int main()
 	phong_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER, "shaders/phong.fs"));
 	Program program{ phong_shaders };
 
+	Shader vertex_shader{ GL_VERTEX_SHADER };
+	vertex_shader.add_source_from_file("shaders/phong.vs");
+	std::cout << "Vertex shader compilation" << std::endl;
+	vertex_shader.compile();
+	vertex_shader.print_compile_error();
+
+	Shader fragment_shader{ GL_FRAGMENT_SHADER };
+	std::cout << "Fragment shader compilation" << std::endl;
+	fragment_shader.add_source_from_file("shaders/phong.fs");
+	fragment_shader.compile();
+	fragment_shader.print_compile_error();
+
+	Program old_program {};
+	old_program.attach_shader(vertex_shader);
+	old_program.attach_shader(fragment_shader);
+	old_program.link_program();
+	old_program.print_link_error();
+
 
 	glm::mat4 model = glm::mat4(1.0);
 	glm::mat4 view = camera.generate_view_mat();
@@ -177,6 +195,42 @@ int main()
 	program.use();
 	program.set_mat4f("light_space", light_space);
 	program.set1i("light.shadow_map", 2);
+
+
+	// render to frame buffer and afterwards render volumetrics ontop
+	unsigned int main_buffer;
+	glGenFramebuffers(1, &main_buffer);
+
+	// color texture
+	unsigned int frame_color;
+	glGenTextures(1, &frame_color);
+	glBindTexture(GL_TEXTURE_2D, frame_color);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_x, screen_y, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	unsigned int frame_ds;
+	glGenTextures(1, &frame_ds);
+	glBindTexture(GL_TEXTURE_2D, frame_ds);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, screen_x, screen_y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, (void*)0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, main_buffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_color, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, frame_ds, 0);
+
+
+	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cerr << "Main frame buffer creation failed with status: " << status << std::endl;
+		return -1;
+	}
+
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 

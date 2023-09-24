@@ -5,6 +5,14 @@ Shader::Shader(unsigned int shader_type)
 	shader = glCreateShader(shader_type);
 }
 
+Shader::Shader(unsigned int shader_type, const char* path)
+{
+	shader = glCreateShader(shader_type);
+	add_source_from_file(path);
+	compile();
+	print_compile_error();
+}
+
 Shader::~Shader()
 {
 	glDeleteShader(shader);
