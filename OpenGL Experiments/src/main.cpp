@@ -99,7 +99,6 @@ int main()
 	ground_model = glm::translate(ground_model, glm::vec3(-5, -1.8, -5));
 	ground_model = glm::scale(ground_model, glm::vec3(10, 1, 10));
 
-
 	// shaders
 	std::vector<std::shared_ptr<Shader>> phong_shaders;
 	phong_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/phong.vs"));
@@ -166,7 +165,6 @@ int main()
 	depth_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER,"shaders/depth.fs"));
 	Program depth_program { depth_shaders };
 
-
 	glm::mat4 light_projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.5f, 50.0f);
 	glm::mat4 light_view = glm::lookAt(light_position, glm::vec3{0.0f}, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 light_space = light_projection * light_view;
@@ -177,6 +175,50 @@ int main()
 	program.use();
 	program.set_mat4f("light_space", light_space);
 	program.set1i("light.shadow_map", 2);
+
+
+	// render to frame buffer and afterwards render volumetrics ontop
+	unsigned int main_buffer;
+	glGenFramebuffers(1, &main_buffer);
+
+	// color texture
+	unsigned int frame_color;
+	glGenTextures(1, &frame_color);
+	glBindTexture(GL_TEXTURE_2D, frame_color);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_x, screen_y, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	unsigned int frame_ds;
+	glGenTextures(1, &frame_ds);
+	glBindTexture(GL_TEXTURE_2D, frame_ds);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, screen_x, screen_y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, (void*)0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, main_buffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_color, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, frame_ds, 0);
+
+
+	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cerr << "Main frame buffer creation failed with status: " << status << std::endl;
+		return -1;
+	}
+
+	std::vector<std::shared_ptr<Shader>> post_shaders;
+	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
+	post_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER, "shaders/volume.fs"));
+	Program post_program{ post_shaders };
+
+	post_program.use();
+	post_program.set1i("frame", 2);
+
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -204,7 +246,7 @@ int main()
 		ground_plane.draw(depth_program);
 		
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, main_buffer);
 		glViewport(0, 0, screen_x, screen_y);
 
 		// rendering
@@ -235,6 +277,24 @@ int main()
 		program.set_mat4f("model", ground_model);
 		ground_plane.draw(program);
 
+
+		// post processing
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, screen_x, screen_y);
+
+		// rendering
+		glClearColor(0.1, 0.3, 0.1, 1);
+		glDisable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		post_program.use();
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, frame_color);
+
+		ground_plane.draw(post_program);
+
+		glEnable(GL_DEPTH_TEST);
 
 		// buffer
 		glfwSwapBuffers(window);
