@@ -109,7 +109,10 @@ int main()
 	glm::mat4 model = glm::mat4(1.0);
 	glm::mat4 view = camera.generate_view_mat();
 	glm::mat4 projection;
-	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.01f, 100.0f);
+
+	float fov_y = glm::radians(45.0f);
+	float near_plane = 0.1f;
+	projection = glm::perspective(fov_y, ((float) screen_x) / screen_y, near_plane, 100.0f);
 
 	program.use();
 	program.set_mat4f("view", view);
@@ -218,7 +221,8 @@ int main()
 
 	post_program.use();
 	post_program.set1i("frame", 2);
-
+	post_program.set1f("projection.y_fov", fov_y);
+	post_program.set1f("projection.d_near", near_plane);
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -288,6 +292,8 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		post_program.use();
+		post_program.set_vec2f("resolution", (float)screen_x, (float)screen_y);
+		post_program.set_mat4f("view", view);
 
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, frame_color);
