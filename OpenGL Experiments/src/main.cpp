@@ -32,7 +32,7 @@ void handle_input(GLFWwindow* window);
 int screen_x = 800;
 int screen_y = 600;
 
-Camera camera = { glm::vec3(0.0, 2.0, 4.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0) };
+Camera camera = { glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0) };
 
 bool can_move = true;
 
@@ -275,6 +275,13 @@ int main()
 		program.set_mat4f("model", model);
 		backpack.draw(program);
 
+		glm::mat4 cloud_model = glm::mat4(1.0);
+		cloud_model = glm::translate(cloud_model, glm::vec3(0, 0, -10));
+		program.set_mat4f("model", cloud_model);
+
+		backpack.draw(program);
+
+
 		program.set_mat4f("model", light_model);
 		backpack.draw(program);
 
@@ -386,6 +393,10 @@ void handle_input(GLFWwindow* window)
 	pos += dx * strength * dir;
 	glm::vec3 side = glm::cross(dir, camera.get_up()); // can assume both normalized
 	pos += dy * strength * side;
+	
+	if (dx + dy != 0) {
+		std::cout << pos.x << "," << pos.y << "," << pos.z << std::endl;
+	}
 
 	camera.set_pos(pos);
 }
