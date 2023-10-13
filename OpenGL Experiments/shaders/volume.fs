@@ -2,17 +2,16 @@
 out vec4 FragColor;
 
 in vec2 tex_coord;
-uniform sampler2D frame;
+in vec3 w_dir;
 
-// assume main program uses perspective projection
 struct Projection {
 	float y_fov;
 	float d_near;
 };
 uniform Projection projection;
 
-uniform mat4 view;
-uniform vec2 resolution;
+uniform sampler2D frame;
+uniform vec3 w_pos;
 
 struct Sphere {
 	vec3 p;
@@ -54,30 +53,7 @@ bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1) {
 
 void main()
 {
-	// precomputation could be moved to fragment shader
-	float aspect_ratio = resolution.x / resolution.y;
-
-	// dimension of the near plane defined by fov, aspect ratio and distance
-	float len_y = tan(0.5 * projection.y_fov) * projection.d_near * 2.0;
-	float len_x = aspect_ratio * len_y;
-
-	// lower left corner of near plane offset to be at center of pixel
-	float i_res_x = 1.0 / resolution.x;
-	float i_res_y = 1.0 / resolution.y;
-
-	// construct ray in view space
-	vec3 corner = vec3(-len_x/2.0, 0, -len_y/2.0) + vec3(0.5 * i_res_x, 0, 0.5 * i_res_y);
-
-	vec3 r_origin = vec3(0, projection.d_near, 0);
-	vec3 r_dest = corner + vec3(tex_coord.x * len_x, 0, tex_coord.y * len_y);
-	vec3 r_dir = r_dest-r_origin;
-
-	// convert to world space by multiplying by inverted view matrix
-	mat3 inverse_mat = transpose(mat3(view));
-	vec3 w_pos = r_origin.xzy - vec3(view[3]);
-	vec3 w_dir = inverse_mat * r_dir.xzy;
-
-	Ray r = {w_pos, w_dir};
+	Ray r = {w_pos + vec3(0,0,projection.d_near), w_dir};
 	float t0;
 	float t1;
 

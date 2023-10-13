@@ -301,6 +301,7 @@ int main()
 		post_program.use();
 		post_program.set_vec2f("resolution", (float)screen_x, (float)screen_y);
 		post_program.set_mat4f("view", view);
+		post_program.set_vec3f("w_pos", camera_pos);
 
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, frame_color);
@@ -343,7 +344,7 @@ void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 
 	glm::vec3 dir = camera.get_dir();
 
-	// not efficient, could compute once and update
+	// not efficient, could comp	ute once and update
 	double yaw   = atan2(dir.z, dir.x);
 	double pitch = asin(dir.y);
 
@@ -355,6 +356,14 @@ void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 	dir.z = (float) (sin(yaw) * cos(pitch));
 
 	camera.set_dir(dir);
+
+	if (abs(dx) + abs(dy) != 0) {
+		std::cout << "WD:" << dir.x << "," << dir.y << "," << dir.z << std::endl;
+		glm::mat4 transform = camera.generate_view_mat();
+		glm::vec4 dir2 = glm::vec4(0, 0, -1, 0);
+		glm::vec4 vdir = glm::inverse(transform) * dir2;
+		std::cout << "VD:" << vdir.x << "," << vdir.y << "," << vdir.z << std::endl;
+	}
 
 	xlast = xpos;
 	ylast = ypos;
@@ -394,8 +403,8 @@ void handle_input(GLFWwindow* window)
 	glm::vec3 side = glm::cross(dir, camera.get_up()); // can assume both normalized
 	pos += dy * strength * side;
 	
-	if (dx + dy != 0) {
-		std::cout << pos.x << "," << pos.y << "," << pos.z << std::endl;
+	if (abs(dx) + abs(dy) != 0) {
+		std::cout << "P:" << pos.x << "," << pos.y << "," << pos.z << std::endl;
 	}
 
 	camera.set_pos(pos);
