@@ -110,9 +110,10 @@ int main()
 	glm::mat4 view = camera.generate_view_mat();
 	glm::mat4 projection;
 
-	float fov_y = glm::radians(45.0f);
-	float near_plane = 0.1f;
-	projection = glm::perspective(fov_y, ((float) screen_x) / screen_y, near_plane, 100.0f);
+	constexpr float fov_y = glm::radians(45.0f);
+	constexpr float near_plane = 0.1f;
+	constexpr float far_plane = 100.0f;
+	projection = glm::perspective(fov_y, ((float) screen_x) / screen_y, near_plane, far_plane);
 
 	program.use();
 	program.set_mat4f("view", view);
@@ -221,8 +222,10 @@ int main()
 
 	post_program.use();
 	post_program.set1i("frame", 2);
+	post_program.set1i("depth", 3);
 	post_program.set1f("projection.y_fov", fov_y);
 	post_program.set1f("projection.d_near", near_plane);
+	post_program.set1f("projection.d_far", far_plane);
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -306,6 +309,9 @@ int main()
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, frame_color);
 
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, frame_ds);
+
 		ground_plane.draw(post_program);
 
 		glEnable(GL_DEPTH_TEST);
@@ -357,14 +363,6 @@ void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 
 	camera.set_dir(dir);
 
-	if (abs(dx) + abs(dy) != 0) {
-		std::cout << "WD:" << dir.x << "," << dir.y << "," << dir.z << std::endl;
-		glm::mat4 transform = camera.generate_view_mat();
-		glm::vec4 dir2 = glm::vec4(0, 0, -1, 0);
-		glm::vec4 vdir = glm::inverse(transform) * dir2;
-		std::cout << "VD:" << vdir.x << "," << vdir.y << "," << vdir.z << std::endl;
-	}
-
 	xlast = xpos;
 	ylast = ypos;
 }
@@ -402,10 +400,6 @@ void handle_input(GLFWwindow* window)
 	pos += dx * strength * dir;
 	glm::vec3 side = glm::cross(dir, camera.get_up()); // can assume both normalized
 	pos += dy * strength * side;
-	
-	if (abs(dx) + abs(dy) != 0) {
-		std::cout << "P:" << pos.x << "," << pos.y << "," << pos.z << std::endl;
-	}
 
 	camera.set_pos(pos);
 }

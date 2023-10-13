@@ -6,6 +6,7 @@ layout (location = 2) in vec2 uv;
 struct Projection {
 	float y_fov;
 	float d_near;
+    float d_far; // for linearlizing depth
 };
 uniform Projection projection;
 
