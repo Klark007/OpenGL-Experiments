@@ -302,6 +302,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		post_program.use();
+		post_program.set1f("time", glfwGetTime());
 		post_program.set_vec2f("resolution", (float)screen_x, (float)screen_y);
 		post_program.set_mat4f("view", view);
 		post_program.set_vec3f("w_pos", camera_pos);
