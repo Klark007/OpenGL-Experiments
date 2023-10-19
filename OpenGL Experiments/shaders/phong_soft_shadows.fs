@@ -91,9 +91,10 @@ float pcf(vec4 shadow_coord, float width, vec2 texel_size) {
 
 float sample_occluder(vec2 tex_c, vec2 texel_size) {
 	float occluder_avg = 0.0;
+	float width = 1.5;
 
 	for (int i = 0; i < NR_OCCLUDER_SAMPLES; i++) {
-		vec2 tex_coord = tex_c + light.occluder_samples[i] * texel_size;
+		vec2 tex_coord = tex_c + (width * light.occluder_samples[i] - vec2(width/2)) * texel_size;
 		occluder_avg += occluder_distance(tex_coord);
 	}
 	
@@ -124,25 +125,6 @@ float in_soft_shadow() {
 }
 
 vec3 debug_rotation() {
-	/*
-	float width = 3.0;
-	vec2 texel_size = 1.0 / textureSize(light.shadow_map, 0);
-
-	float error = 0.0;
-	for (int i = 0; i < NR_SHADOW_SAMPLES; i++) {
-		vec3 offset = vec3((light.shadow_samples[i].x*width - width/2),(light.shadow_samples[i].y*width - width/2),0);
-
-		float seed = 0.74687876; //  fract(time)
-		float rand = gold_noise(vec2(581.5, 508.5), seed);
-
-		mat3 rotation = rotate_z(mod(rand, 2*3.14159));
-		vec3 offset2 = rotation*offset;
-
-		if (offset2.z != 0 || length(offset2) - length(offset) > 1e-5) {
-			error = 1.0;
-		}
-	}
-	*/
 	vec2 v = vec2(581.5, 508.5);
 	float PHI = 1.61803398874989484820459; 
 
