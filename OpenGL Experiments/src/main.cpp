@@ -278,13 +278,6 @@ int main()
 		program.set_mat4f("model", model);
 		backpack.draw(program);
 
-		glm::mat4 cloud_model = glm::mat4(1.0);
-		cloud_model = glm::translate(cloud_model, glm::vec3(0, 0, -10));
-		program.set_mat4f("model", cloud_model);
-
-		backpack.draw(program);
-
-
 		program.set_mat4f("model", light_model);
 		backpack.draw(program);
 

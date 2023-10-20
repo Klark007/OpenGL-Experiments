@@ -1,5 +1,5 @@
 // TODO
-// Banding
+// Banding (X)
 // In scattering
 // Scattering distributions
 // Non uniform density generation
@@ -31,20 +31,22 @@ struct Sphere {
 	vec3 p;
 	float r;
 };
-Sphere sphere = {vec3(0.0, 0.0, -10.0), 2.5};
+Sphere sphere = {vec3(0.0, 0.0, -15.0), 5};
 
 struct Ray {
 	vec3 o;
 	vec3 d;
 };
 
-vec3 light_pos = vec3(0.0, 5.0, -10.0); // uniform of same light as used for phong
+// sun light not small point lights
+vec3 light_pos = vec3(0.0, 15.0, -15.0);
+vec3 light_color = vec3(1.3, 0.3, 0.9);
 
 struct Volume {
 	float absorption;
 	float scattering; 
 };
-Volume volume = {0.5, 0.5};
+Volume volume = {0.1, 0.1};
 float step_size = 0.2;
 
 float jitter_str = 0.38; // range [0,1]
@@ -54,18 +56,21 @@ float linear_depth();
 float gold_noise(in vec2 xy, in float seed);
 
 float light_transmission(vec3 origin, vec3 dest) {
-	Ray n = {origin, dest-origin};
+	Ray n = {origin, normalize(dest-origin)};
 
 	float t0;
 	float t1;
 
-	intersect_sphere(sphere, n, t0, t1);
-	t1 = max(0, t1);
 	float trans = 1.0;
-	// increase step size for light transmission calculations
-	for (float t = 0; t < t1; t += step_size) {
-
+	if (intersect_sphere(sphere, n, t0, t1) && t1 >= 0) {
+		// increase step size for light transmission calculations
+		float tau = 0.0;
+		for (float t = 0; t < t1; t += step_size) {
+			tau -= 1.0;
+		}
+		trans = exp(tau * step_size * (volume.absorption+volume.scattering));
 	}
+	//return exp(-t1 * (volume.absorption+volume.scattering));
 	return trans;
 }
 
@@ -73,6 +78,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
 
+	vec3 result = vec3(0.0);
 	// this introduces noise but removes Banding
 	// impact of noise could be lessend by blur, avoiding small regions with much transmission or smaller perturbation
 	float n = (gold_noise(gl_FragCoord.xy, 0.9787)-0.5) * jitter_str + 0.5;
@@ -81,10 +87,11 @@ vec3 raymarching(Ray r, float t0, float t1) {
 
 		// compute in scattering from light source
 		float l_transmission = light_transmission(r.o + r.d*t, light_pos);
-
+		result += transmission * l_transmission * light_color * volume.scattering * step_size;
 	}
 
-	return texture(frame, tex_coord).rgb * transmission + vec3(1.0, 0.7, 0.2) * (1-transmission);
+	result += texture(frame, tex_coord).rgb * transmission;
+	return result;
 }
 
 void main()
