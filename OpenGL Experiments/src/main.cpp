@@ -219,15 +219,15 @@ int main()
 
 	// TODO: Create 2d perlin noise for coverage (should tile)
 	// TODO: Create 3d worley-perlin noise for density
-	unsigned int noise_res_x = 1024;
-	unsigned int noise_res_y = 1024;
-	Worley<unsigned char> w(noise_res_x, noise_res_y, 16, 16);
+	unsigned int noise_res_x = 128;
+	unsigned int noise_res_y = 128;
+	Worley<unsigned char> w(noise_res_x, noise_res_y, { {16,16}, {32,32}, {64,64} });
 	
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
 	glBindTexture(GL_TEXTURE_2D, w_texture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RED, GL_UNSIGNED_BYTE, w.get_data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RGB, GL_UNSIGNED_BYTE, w.get_data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
