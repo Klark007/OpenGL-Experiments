@@ -23,6 +23,10 @@
     <ClCompile Include="src\Material.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\main.cpp" />
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley.cpp" />
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley3D.cpp" />
+    <ClCompile Include="src\noise\Worley.cpp" />
     <ClCompile Include="src\Program.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\glad.c" />
@@ -34,6 +38,11 @@
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\math_helper.h" />
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\stb_image.h" />
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley.h" />
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley3D.h" />
+    <ClInclude Include="src\noise\Worley.h" />
     <ClInclude Include="src\Program.h" />
     <ClInclude Include="src\sampling\fdps.h" />
     <ClInclude Include="src\Shader.h" />
@@ -49,6 +58,8 @@
     <None Include="shaders\phong_soft_shadows.fs" />
     <None Include="shaders\volume.fs" />
     <None Include="shaders\volume.vs" />
+    <None Include="src\noise\Worley-Noise\.gitattributes" />
+    <None Include="src\noise\Worley-Noise\.gitignore" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />

@@ -23,6 +23,7 @@ uniform Projection projection;
 
 uniform sampler2D frame;
 uniform sampler2D depth;
+uniform sampler2D worley_n;
 uniform vec3 w_pos;
 
 uniform mat4 view;
@@ -96,6 +97,9 @@ vec3 raymarching(Ray r, float t0, float t1) {
 
 void main()
 {
+	FragColor = 1-texture(worley_n, tex_coord).rrra;
+	return;
+
 	Ray r = {w_pos + vec3(0,0,projection.d_near), normalize(w_dir)};
 	float t0;
 	float t1;

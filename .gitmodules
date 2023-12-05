@@ -1,0 +1,3 @@
+[submodule "OpenGL Experiments/src/noise/Worley-Noise"]
+	path = OpenGL Experiments/src/noise/Worley-Noise
+	url = https://github.com/Klark007/Worley-Noise

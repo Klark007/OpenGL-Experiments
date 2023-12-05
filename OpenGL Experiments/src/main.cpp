@@ -21,6 +21,8 @@
 #define NR_SHADOW_SAMPLES 16
 #define NR_OCCLUDER_SAMPLES 16
 
+#include "noise\Worley-Noise\Worley Noise/Worley.h"
+
 #include <iostream>
 #include <memory>
 
@@ -215,6 +217,22 @@ int main()
 		return -1;
 	}
 
+	// TODO: Create 2d perlin noise for coverage (should tile)
+	// TODO: Create 3d worley-perlin noise for density
+	unsigned int noise_res_x = 1024;
+	unsigned int noise_res_y = 1024;
+	Worley<unsigned char> w(noise_res_x, noise_res_y, 16, 16);
+	
+	unsigned int w_texture;
+	glGenTextures(1, &w_texture);
+	glBindTexture(GL_TEXTURE_2D, w_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RED, GL_UNSIGNED_BYTE, w.get_data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
 	std::vector<std::shared_ptr<Shader>> post_shaders;
 	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
 	post_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER, "shaders/volume.fs"));
@@ -223,6 +241,7 @@ int main()
 	post_program.use();
 	post_program.set1i("frame", 2);
 	post_program.set1i("depth", 3);
+	post_program.set1i("worley_n", 4);
 	post_program.set1f("projection.y_fov", fov_y);
 	post_program.set1f("projection.d_near", near_plane);
 	post_program.set1f("projection.d_far", far_plane);
@@ -305,6 +324,9 @@ int main()
 
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, frame_ds);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, w_texture);
 
 		ground_plane.draw(post_program);
 
