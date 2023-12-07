@@ -26,7 +26,6 @@
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\main.cpp" />
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley.cpp" />
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley3D.cpp" />
-    <ClCompile Include="src\noise\Worley.cpp" />
     <ClCompile Include="src\Program.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\glad.c" />
@@ -42,7 +41,6 @@
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\stb_image.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley3D.h" />
-    <ClInclude Include="src\noise\Worley.h" />
     <ClInclude Include="src\Program.h" />
     <ClInclude Include="src\sampling\fdps.h" />
     <ClInclude Include="src\Shader.h" />

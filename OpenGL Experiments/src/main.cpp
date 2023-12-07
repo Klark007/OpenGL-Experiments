@@ -21,7 +21,7 @@
 #define NR_SHADOW_SAMPLES 16
 #define NR_OCCLUDER_SAMPLES 16
 
-#include "noise\Worley-Noise\Worley Noise/Worley.h"
+#include "noise\Worley-Noise\Worley Noise/Worley3D.h"
 
 #include <iostream>
 #include <memory>
@@ -37,6 +37,9 @@ int screen_y = 600;
 Camera camera = { glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0) };
 
 bool can_move = true;
+
+int worley_channel = 0;
+glm::vec3 worley_offset = glm::vec3(0.0, 0.0, 0.0);
 
 int main()
 {
@@ -221,17 +224,19 @@ int main()
 	// TODO: Create 3d worley-perlin noise for density
 	unsigned int noise_res_x = 128;
 	unsigned int noise_res_y = 128;
-	Worley<unsigned char> w(noise_res_x, noise_res_y, { {16,16}, {32,32}, {64,64} });
+	unsigned int noise_res_z = 128;
+	Worley3D<unsigned char> w(noise_res_x, noise_res_y, noise_res_z, { {16,16,16}, {24,24,24}, {32,32,32} });
 	
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
-	glBindTexture(GL_TEXTURE_2D, w_texture);
+	glBindTexture(GL_TEXTURE_3D, w_texture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RGB, GL_UNSIGNED_BYTE, w.get_data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, noise_res_x, noise_res_y, noise_res_z, 0, GL_RGB, GL_UNSIGNED_BYTE, w.get_data());
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
 	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
@@ -325,8 +330,10 @@ int main()
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, frame_ds);
 
+		post_program.set1i("worley_channel", worley_channel);
+		post_program.set_vec3f("worley_offset", worley_offset);
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, w_texture);
+		glBindTexture(GL_TEXTURE_3D, w_texture);
 
 		ground_plane.draw(post_program);
 
@@ -409,6 +416,38 @@ void handle_input(GLFWwindow* window)
 		dy += 1;
 	if (glfwGetKey(window, GLFW_KEY_A))
 		dy -= 1;
+
+	if (glfwGetKey(window, GLFW_KEY_0)) {
+		worley_channel = 3;
+	}
+	if (glfwGetKey(window, GLFW_KEY_1)) {
+		worley_channel = 0;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2)) {
+		worley_channel = 1;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3)) {
+		worley_channel = 2;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_J)) {
+		worley_offset.x -= 0.01;
+	}
+	if (glfwGetKey(window, GLFW_KEY_L)) {
+		worley_offset.x += 0.01;
+	}
+	if (glfwGetKey(window, GLFW_KEY_K)) {
+		worley_offset.y -= 0.01;
+	}
+	if (glfwGetKey(window, GLFW_KEY_I)) {
+		worley_offset.y += 0.01;
+	}
+	if (glfwGetKey(window, GLFW_KEY_U)) {
+		worley_offset.z -= 0.002;
+	}
+	if (glfwGetKey(window, GLFW_KEY_O)) {
+		worley_offset.z += 0.002;
+	}
 
 	glm::vec3 pos = camera.get_pos();
 	glm::vec3 dir = camera.get_dir();

@@ -48,9 +48,6 @@
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley3D.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="src\noise\Worley.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -87,9 +84,6 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley3D.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="src\noise\Worley.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
