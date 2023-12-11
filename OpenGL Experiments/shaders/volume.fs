@@ -23,7 +23,6 @@ uniform Projection projection;
 
 uniform sampler2D frame;
 uniform sampler2D depth;
-uniform sampler3D worley_n;
 uniform vec3 w_pos;
 
 uniform mat4 view;
@@ -95,12 +94,15 @@ vec3 raymarching(Ray r, float t0, float t1) {
 	return result;
 }
 
+//uniform sampler3D worley_n;
+uniform sampler2D worley_n;
 uniform int worley_channel;
 uniform vec3 worley_offset;
 
 void main()
 {
-	vec4 s = texture(worley_n, vec3(tex_coord, 0)+worley_offset);
+	vec4 s = texture(worley_n, tex_coord + worley_offset.xy);
+	//vec4 s = texture(worley_n, vec3(tex_coord, 0)+worley_offset);
 	if (worley_channel == 0) {
 		FragColor = s.rrra;
 		return;
