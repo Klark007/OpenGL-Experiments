@@ -22,6 +22,7 @@
 #define NR_OCCLUDER_SAMPLES 16
 
 #include "noise/Worley-Noise/Worley Noise/Worley3D.h"
+#include "noise/Worley-Noise/Worley Noise/Worley.h"
 #include "noise/Perlin.h"
 
 #include <iostream>
@@ -245,9 +246,12 @@ int main()
 	glGenTextures(1, &w_texture);
 
 	Perlin<unsigned char> p (128, 128, 10, 10);
+	Worley<unsigned char> w (128,128, {{7,8},{16,16},{24,24}});
+	w.set_channel(1,p.get_channel(0));
+	
 	glBindTexture(GL_TEXTURE_2D, w_texture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RED, GL_UNSIGNED_BYTE, p.get_data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RGB, GL_UNSIGNED_BYTE, w.get_data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

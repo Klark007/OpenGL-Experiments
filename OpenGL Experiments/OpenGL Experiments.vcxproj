@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Noise.cpp" />
     <ClCompile Include="src\noise\Perlin.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\Material.cpp" />
@@ -33,6 +34,7 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Noise.h" />
     <ClInclude Include="src\noise\Perlin.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\Model.h" />

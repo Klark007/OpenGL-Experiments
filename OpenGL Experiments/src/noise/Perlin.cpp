@@ -3,35 +3,28 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/noise.hpp>
 
-#include <iostream>
-
 template<class T>
 Perlin<T>::Perlin(uint res_x, uint res_y, uint scale_x, uint scale_y)
+  : Noise<T>(res_x, res_y, 1), scale_x {scale_x}, scale_y {scale_y}
 {
-  img_data = new T[res_x * res_y];
-
-  glm::vec2 position;
-
-  const glm::vec2 tiling = glm::vec2(scale_x,scale_y);
-
-  std::cout << "Start perlin generation" << std::endl;
-
-  for (uint y = 0; y < res_y; y++) {
-    for (uint x = 0; x < res_x; x++) {
-      position = glm::vec2((float) x / res_x * scale_x, (float) y / res_y * scale_y);
-      float perlin = (glm::perlin(position, tiling)+1.0)/2;
-      T value = static_cast <T> (perlin * std::numeric_limits<T>::max());
-      img_data[y * res_x + x] = value;
-    }
-  }
-
-  std::cout << "Finished perlin generation" << std::endl;
+  gen_img();
 }
 
 template<class T>
-Perlin<T>::~Perlin()
+void Perlin<T>::gen_img()
 {
-  delete[] img_data;
+  glm::vec2 position;
+
+  const glm::vec2 tiling = glm::vec2(scale_x, scale_y);
+
+  for (uint y = 0; y < this->res_y; y++) {
+    for (uint x = 0; x < this->res_x; x++) {
+      position = glm::vec2((float)x / this->res_x * scale_x, (float)y / this->res_y * scale_y);
+      float perlin = (glm::perlin(position, tiling) + 1.0) / 2;
+      T value = static_cast <T> (perlin * std::numeric_limits<T>::max());
+      this->img_data.at(this->idx(x, y, 0)) = value;
+    }
+  }
 }
 
 template class Perlin<unsigned char>;
