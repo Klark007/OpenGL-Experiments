@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\noise\Perlin3D.cpp" />
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Noise.cpp" />
     <ClCompile Include="src\noise\Perlin.cpp" />
     <ClCompile Include="src\Model.cpp" />
@@ -34,6 +35,7 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\noise\Perlin3D.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Noise.h" />
     <ClInclude Include="src\noise\Perlin.h" />
     <ClInclude Include="resource.h" />

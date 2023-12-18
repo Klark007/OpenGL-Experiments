@@ -23,6 +23,7 @@
 
 #include "noise/Worley-Noise/Worley Noise/Worley3D.h"
 #include "noise/Worley-Noise/Worley Noise/Worley.h"
+#include "noise/Perlin3D.h"
 #include "noise/Perlin.h"
 
 #include <iostream>
@@ -226,22 +227,30 @@ int main()
 	// TODO: Create 3d worley-perlin noise for density
 	unsigned int noise_res_x = 128;
 	unsigned int noise_res_y = 128;
-	/*
 	unsigned int noise_res_z = 128;
-	Worley3D<unsigned char> w(noise_res_x, noise_res_y, noise_res_z, { {16,16,16}, {24,24,24}, {32,32,32} });
+	Worley3D<float> w(noise_res_x, noise_res_y, noise_res_z, { {8,8,8}, {16,16,16}, {24,24,24}, {35,35,35} });
 	
+	Perlin3D<float> p(noise_res_x, noise_res_y, noise_res_z, 6, 6, 6);
+
+	w.invert();
+	
+	w.scale_channel(0, 0.35);
+	w.offset_channel(0, 0.55);
+	w.multiply_channel(0, p.get_channel(0));
+
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
 	glBindTexture(GL_TEXTURE_3D, w_texture);
 
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, noise_res_x, noise_res_y, noise_res_z, 0, GL_RGB, GL_UNSIGNED_BYTE, w.get_data());
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, noise_res_x, noise_res_y, noise_res_z, 0, GL_RGBA, GL_FLOAT, w.get_data());
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-	*/
+	
 
+	/*
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
 
@@ -255,12 +264,8 @@ int main()
 
 	w.set_channel(1, w.get_channel(0));
 	w.set_channel(2, p.get_channel(0));
-
 	
-	//w.scale_channel(0, 0.8);
-	//p.scale(0.2);
 	w.multiply_channel(0, p.get_channel(0));
-	
 	
 	glBindTexture(GL_TEXTURE_2D, w_texture);
 
@@ -269,6 +274,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	*/
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
 	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
@@ -365,9 +371,8 @@ int main()
 		post_program.set1i("worley_channel", worley_channel);
 		post_program.set_vec3f("worley_offset", worley_offset);
 		glActiveTexture(GL_TEXTURE4);
-		//glBindTexture(GL_TEXTURE_3D, w_texture);
-		glBindTexture(GL_TEXTURE_2D, w_texture);
-
+		glBindTexture(GL_TEXTURE_3D, w_texture);
+		
 		ground_plane.draw(post_program);
 
 		glEnable(GL_DEPTH_TEST);
@@ -451,7 +456,7 @@ void handle_input(GLFWwindow* window)
 		dy -= 1;
 
 	if (glfwGetKey(window, GLFW_KEY_0)) {
-		worley_channel = 3;
+		worley_channel = 4;
 	}
 	if (glfwGetKey(window, GLFW_KEY_1)) {
 		worley_channel = 0;
@@ -461,6 +466,9 @@ void handle_input(GLFWwindow* window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_3)) {
 		worley_channel = 2;
+	}
+	if (glfwGetKey(window, GLFW_KEY_4)) {
+		worley_channel = 3;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_J)) {

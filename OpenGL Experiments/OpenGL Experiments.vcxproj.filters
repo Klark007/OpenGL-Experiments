@@ -54,6 +54,9 @@
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Noise.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="src\noise\Perlin3D.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -96,6 +99,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Noise.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Perlin3D.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
