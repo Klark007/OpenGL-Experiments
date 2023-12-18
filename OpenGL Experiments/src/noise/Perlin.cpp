@@ -21,10 +21,11 @@ void Perlin<T>::gen_img()
     for (uint x = 0; x < this->res_x; x++) {
       position = glm::vec2((float)x / this->res_x * scale_x, (float)y / this->res_y * scale_y);
       float perlin = (glm::perlin(position, tiling) + 1.0) / 2;
-      T value = static_cast <T> (perlin * std::numeric_limits<T>::max());
+      T value = this->distance_to_val(perlin);
       this->img_data.at(this->idx(x, y, 0)) = value;
     }
   }
 }
 
 template class Perlin<unsigned char>;
+template class Perlin<float>;

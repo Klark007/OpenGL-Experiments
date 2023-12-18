@@ -245,13 +245,26 @@ int main()
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
 
-	Perlin<unsigned char> p (128, 128, 10, 10);
-	Worley<unsigned char> w (128,128, {{7,8},{16,16},{24,24}});
-	w.set_channel(1,p.get_channel(0));
+	Perlin<float> p (128, 128, 5, 5);
+	
+	Worley<float> w (128, 128, { {14,14},{16,16},{24,24} });
+	w.invert();
+	
+	w.scale_channel(0, 0.35);
+	w.offset_channel(0, 0.55);
+
+	w.set_channel(1, w.get_channel(0));
+	w.set_channel(2, p.get_channel(0));
+
+	
+	//w.scale_channel(0, 0.8);
+	//p.scale(0.2);
+	w.multiply_channel(0, p.get_channel(0));
+	
 	
 	glBindTexture(GL_TEXTURE_2D, w_texture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RGB, GL_UNSIGNED_BYTE, w.get_data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RGB, GL_FLOAT, w.get_data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
