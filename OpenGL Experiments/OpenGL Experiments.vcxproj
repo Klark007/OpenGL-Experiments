@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,14 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\noise\Perlin3D.cpp" />
-    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Noise.cpp" />
-    <ClCompile Include="src\noise\Perlin.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\Material.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Camera.cpp" />
-    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\main.cpp" />
+    <ClCompile Include="src\noise\Perlin.cpp" />
+    <ClCompile Include="src\noise\Perlin3D.cpp" />
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Noise.cpp" />
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley.cpp" />
     <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley3D.cpp" />
     <ClCompile Include="src\Program.cpp" />
@@ -35,15 +34,15 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\noise\Perlin3D.h" />
-    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Noise.h" />
-    <ClInclude Include="src\noise\Perlin.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\Model.h" />
     <ClInclude Include="src\Material.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\noise\Perlin.h" />
+    <ClInclude Include="src\noise\Perlin3D.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\math_helper.h" />
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Noise.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\stb_image.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley3D.h" />
@@ -65,6 +64,7 @@
     <None Include="shaders\volume.vs" />
     <None Include="src\noise\Worley-Noise\.gitattributes" />
     <None Include="src\noise\Worley-Noise\.gitignore" />
+    <None Include="src\noise\Worley-Noise\README.md" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />
@@ -133,8 +133,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Jan\source\OpenGL Dependencies\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Jan\source\OpenGL Dependencies\lib;C:\Users\Jan\source\OpenGL Dependencies\bin;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Jan\source\OpenGL Dependencies\include;C:\Users\jangr\source\OpenGL Dependencies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Jan\source\OpenGL Dependencies\lib;C:\Users\Jan\source\OpenGL Dependencies\bin;C:\Users\jangr\source\OpenGL Dependencies\lib;C:\Users\jangr\source\OpenGL Dependencies\bin;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -171,7 +171,6 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -191,7 +190,6 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
