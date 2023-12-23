@@ -39,6 +39,24 @@
     <ClCompile Include="src\Model.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\main.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Worley3D.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\noise\Perlin.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\noise\Worley-Noise\Worley Noise\Noise.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\noise\Perlin3D.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -65,6 +83,30 @@
     <ClInclude Include="src\sampling\fdps.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\math_helper.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\stb_image.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley3D.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Perlin.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Noise.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Perlin3D.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\WorleyFBM.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Old\base.vs" />
@@ -77,6 +119,8 @@
     <None Include="shaders\phong_soft_shadows.fs" />
     <None Include="shaders\volume.fs" />
     <None Include="shaders\volume.vs" />
+    <None Include="src\noise\Worley-Noise\.gitattributes" />
+    <None Include="src\noise\Worley-Noise\.gitignore" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />
