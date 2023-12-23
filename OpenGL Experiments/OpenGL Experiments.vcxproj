@@ -47,6 +47,7 @@
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\stb_image.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley3D.h" />
+    <ClInclude Include="src\noise\Worley-Noise\Worley Noise\WorleyFBM.h" />
     <ClInclude Include="src\Program.h" />
     <ClInclude Include="src\sampling\fdps.h" />
     <ClInclude Include="src\Shader.h" />

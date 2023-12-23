@@ -23,6 +23,7 @@
 
 #include "noise/Worley-Noise/Worley Noise/Worley3D.h"
 #include "noise/Worley-Noise/Worley Noise/Worley.h"
+#include "noise/Worley-Noise/Worley Noise/WorleyFBM.h"
 #include "noise/Perlin3D.h"
 #include "noise/Perlin.h"
 
@@ -223,10 +224,10 @@ int main()
 		return -1;
 	}
 
-	// TODO: Create 2d perlin noise for coverage (should tile)
-	// TODO: Create 3d worley-perlin noise for density
-	unsigned int noise_res_x = 128;
-	unsigned int noise_res_y = 128;
+	
+	unsigned int noise_res_x = 128*4;
+	unsigned int noise_res_y = 128*4;
+	/*
 	unsigned int noise_res_z = 128;
 	Worley3D<float> w(noise_res_x, noise_res_y, noise_res_z, { {8,8,8}, {16,16,16}, {24,24,24}, {35,35,35} });
 	
@@ -248,17 +249,27 @@ int main()
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-	
+	*/
 
-	/*
+	
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
 
-	Perlin<float> p (128, 128, 5, 5);
+	//Perlin<float> p (noise_res_x, noise_res_y, 5, 5);
 	
-	Worley<float> w (128, 128, { {14,14},{16,16},{24,24} });
+	Worley<float> w (noise_res_x, noise_res_y, { {14,14},{16,16},{24,24} });
 	w.invert();
+
+	WorleyFBM<float> w2(noise_res_x, noise_res_y, { {14,14},{1,1},{1,1} }, 2);
+	w2.invert();
 	
+	WorleyFBM<float> w3(noise_res_x, noise_res_y, { {14,14},{1,1},{1,1} }, 5);
+	w3.invert();
+
+	w.set_channel(1, w2.get_channel(0));
+	w.set_channel(2, w3.get_channel(0));
+
+	/*
 	w.scale_channel(0, 0.35);
 	w.offset_channel(0, 0.55);
 
@@ -266,6 +277,7 @@ int main()
 	w.set_channel(2, p.get_channel(0));
 	
 	w.multiply_channel(0, p.get_channel(0));
+	*/
 	
 	glBindTexture(GL_TEXTURE_2D, w_texture);
 
@@ -274,7 +286,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	*/
+	
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
 	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
@@ -371,7 +383,8 @@ int main()
 		post_program.set1i("worley_channel", worley_channel);
 		post_program.set_vec3f("worley_offset", worley_offset);
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_3D, w_texture);
+		glBindTexture(GL_TEXTURE_2D, w_texture);
+		//glBindTexture(GL_TEXTURE_3D, w_texture);
 		
 		ground_plane.draw(post_program);
 
