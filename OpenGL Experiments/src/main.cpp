@@ -26,6 +26,7 @@
 #include "noise/Worley-Noise/Worley Noise/WorleyFBM.h"
 #include "noise/Perlin3D.h"
 #include "noise/Perlin.h"
+#include "noise/PerlinFBM.h"
 
 #include <iostream>
 #include <memory>
@@ -255,19 +256,19 @@ int main()
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
 
-	//Perlin<float> p (noise_res_x, noise_res_y, 5, 5);
-	
+	PerlinFBM<float> p1 (noise_res_x, noise_res_y, 2, 2, 3);
+	PerlinFBM<float> p2(noise_res_x, noise_res_y, 2, 2, 5);
+
 	Worley<float> w (noise_res_x, noise_res_y, { {14,14},{16,16},{24,24} });
 	w.invert();
 
-	WorleyFBM<float> w2(noise_res_x, noise_res_y, { {14,14},{1,1},{1,1} }, 2);
-	w2.invert();
-	
+	/*
 	WorleyFBM<float> w3(noise_res_x, noise_res_y, { {14,14},{1,1},{1,1} }, 5);
 	w3.invert();
+	*/
 
-	w.set_channel(1, w2.get_channel(0));
-	w.set_channel(2, w3.get_channel(0));
+	w.set_channel(1, p1.get_channel(0));
+	w.set_channel(2, p2.get_channel(0));
 
 	/*
 	w.scale_channel(0, 0.35);

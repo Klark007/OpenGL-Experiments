@@ -41,6 +41,7 @@
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\noise\Perlin.h" />
     <ClInclude Include="src\noise\Perlin3D.h" />
+    <ClInclude Include="src\noise\PerlinFBM.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\math_helper.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Noise.h" />
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\stb_image.h" />

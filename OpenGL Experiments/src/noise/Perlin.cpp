@@ -7,6 +7,7 @@ template<class T>
 Perlin<T>::Perlin(uint res_x, uint res_y, uint scale_x, uint scale_y)
   : Noise<T>(res_x, res_y, 1), scale_x {scale_x}, scale_y {scale_y}
 {
+    offset = glm::vec2(0, 0);
   gen_img();
 }
 
@@ -20,7 +21,7 @@ void Perlin<T>::gen_img()
   for (uint y = 0; y < this->res_y; y++) {
     for (uint x = 0; x < this->res_x; x++) {
       position = glm::vec2((float)x / this->res_x * scale_x, (float)y / this->res_y * scale_y);
-      float perlin = (glm::perlin(position, tiling) + 1.0) / 2;
+      float perlin = (glm::perlin(position+offset, tiling) + 1.0) / 2;
       T value = this->distance_to_val(perlin);
       this->img_data.at(this->idx(x, y, 0)) = value;
     }

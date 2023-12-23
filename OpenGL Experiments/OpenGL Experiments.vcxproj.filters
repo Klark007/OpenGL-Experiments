@@ -104,6 +104,9 @@
     <ClInclude Include="src\noise\Perlin3D.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\noise\PerlinFBM.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Old\base.vs" />
