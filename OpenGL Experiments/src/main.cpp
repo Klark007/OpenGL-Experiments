@@ -22,6 +22,7 @@
 #define NR_OCCLUDER_SAMPLES 16
 
 #include "noise/Worley-Noise/Worley Noise/Worley3D.h"
+#include "noise/Worley-Noise/Worley Noise/Worley3DFBM.h"
 #include "noise/Worley-Noise/Worley Noise/Worley.h"
 #include "noise/Worley-Noise/Worley Noise/WorleyFBM.h"
 #include "noise/Perlin3D.h"
@@ -226,19 +227,15 @@ int main()
 	}
 
 	
-	unsigned int noise_res_x = 128*4;
-	unsigned int noise_res_y = 128*4;
-	/*
+	unsigned int noise_res_x = 128;
+	unsigned int noise_res_y = 128;
 	unsigned int noise_res_z = 128;
-	Worley3D<float> w(noise_res_x, noise_res_y, noise_res_z, { {8,8,8}, {16,16,16}, {24,24,24}, {35,35,35} });
-	
-	Perlin3D<float> p(noise_res_x, noise_res_y, noise_res_z, 6, 6, 6);
+
+	Worley3DFBM<float> w(noise_res_x, noise_res_y, noise_res_z, { {8,8,8}, {1,1,1}, {1,1,1}, {1,1,1} }, 3);
+
+	//Worley3D<float> w2(noise_res_x, noise_res_y, noise_res_z, { {8,8,8}, {1,1,1}, {1,1,1}, {1,1,1} });
 
 	w.invert();
-	
-	w.scale_channel(0, 0.35);
-	w.offset_channel(0, 0.55);
-	w.multiply_channel(0, p.get_channel(0));
 
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
@@ -250,9 +247,9 @@ int main()
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-	*/
-
 	
+
+	/*
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
 
@@ -262,13 +259,14 @@ int main()
 	Worley<float> w (noise_res_x, noise_res_y, { {14,14},{16,16},{24,24} });
 	w.invert();
 
-	/*
-	WorleyFBM<float> w3(noise_res_x, noise_res_y, { {14,14},{1,1},{1,1} }, 5);
-	w3.invert();
-	*/
+	//WorleyFBM<float> w3(noise_res_x, noise_res_y, { {14,14},{1,1},{1,1} }, 5);
+	//w3.invert();
+	
 
 	w.set_channel(1, p1.get_channel(0));
 	w.set_channel(2, p2.get_channel(0));
+
+	*/
 
 	/*
 	w.scale_channel(0, 0.35);
@@ -384,8 +382,8 @@ int main()
 		post_program.set1i("worley_channel", worley_channel);
 		post_program.set_vec3f("worley_offset", worley_offset);
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, w_texture);
-		//glBindTexture(GL_TEXTURE_3D, w_texture);
+		//glBindTexture(GL_TEXTURE_2D, w_texture);
+		glBindTexture(GL_TEXTURE_3D, w_texture);
 		
 		ground_plane.draw(post_program);
 
