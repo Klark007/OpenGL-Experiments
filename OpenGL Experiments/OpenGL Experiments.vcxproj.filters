@@ -110,6 +110,9 @@
     <ClInclude Include="src\noise\Worley-Noise\Worley Noise\Worley3DFBM.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\noise\Perlin3DFBM.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Old\base.vs" />

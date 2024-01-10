@@ -7,7 +7,7 @@ template<class T>
 Perlin<T>::Perlin(uint res_x, uint res_y, uint scale_x, uint scale_y)
   : Noise<T>(res_x, res_y, 1), scale_x {scale_x}, scale_y {scale_y}
 {
-    offset = glm::vec2(0, 0);
+  offset = glm::vec2(0, 0);
   gen_img();
 }
 

@@ -14,11 +14,11 @@ private:
   glm::vec2 offset;
   void gen_img() override;
 public:
-	inline void regenerate(uint scale_x, uint scale_y, glm::vec2& off);
+	inline void regenerate(uint scale_x, uint scale_y, const glm::vec2& off);
 };
 
 template<class T>
-inline void Perlin<T>::regenerate(uint scale_x, uint scale_y, glm::vec2& off)
+inline void Perlin<T>::regenerate(uint scale_x, uint scale_y, const glm::vec2& off)
 {
 	this->scale_x = scale_x;
 	this->scale_y = scale_y;

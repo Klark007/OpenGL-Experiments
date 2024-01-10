@@ -239,6 +239,7 @@ int main()
 
 	p.scale(0.8);
 	w.invert();
+	w.scale(0.8);
 	w.set_channel(0, p.get_channel(0));
 
 	unsigned int w_texture;
