@@ -21,17 +21,17 @@
 #define NR_SHADOW_SAMPLES 16
 #define NR_OCCLUDER_SAMPLES 16
 
-#include "noise/Worley-Noise/Worley Noise/Worley3D.h"
-#include "noise/Worley-Noise/Worley Noise/Worley3DFBM.h"
-#include "noise/Worley-Noise/Worley Noise/Worley.h"
-#include "noise/Worley-Noise/Worley Noise/WorleyFBM.h"
-#include "noise/Perlin3D.h"
-#include "noise/Perlin3DFBM.h"
-#include "noise/Perlin.h"
-#include "noise/PerlinFBM.h"
+#include "noise/PerlinWorley3D.h"
 
 #include <iostream>
 #include <memory>
+
+#include <chrono>
+typedef std::chrono::steady_clock::time_point time_point;
+
+inline long long duration(time_point a, time_point b) {
+	return std::chrono::duration_cast<std::chrono::seconds>(b - a).count();
+}
 
 void glfw_error_callback(int error, const char* description);
 void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -232,14 +232,7 @@ int main()
 	unsigned int noise_res_y = 128;
 	unsigned int noise_res_z = 128;
 
-	//Worley3DFBM<float> w(noise_res_x, noise_res_y, noise_res_z, { {8,8,8}, {1,1,1}, {1,1,1}, {1,1,1} }, 3);
-	Worley3DFBM<float> w(noise_res_x, noise_res_y, noise_res_z, { {1,1,1}, {8,8,8}, {1,1,1}, {1,1,1} }, 3);
-
-	Perlin3DFBM<float> p(noise_res_x, noise_res_y, noise_res_z, 2, 2, 2, 5);
-
-	p.scale(0.8);
-	w.invert();
-	w.set_channel(0, p.get_channel(0));
+	PerlinWorley3D<float> w(noise_res_x, noise_res_y, noise_res_z, 2, 2, 2, { {8,8,8}, {1,1,1}, {1,1,1}, {1,1,1} });
 
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
