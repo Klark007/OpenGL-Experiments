@@ -40,20 +40,41 @@ struct Ray {
 
 // sun light not small point lights
 vec3 light_pos = vec3(0.0, 15.0, -15.0);
-vec3 light_color = vec3(1.3, 0.3, 0.9);
+vec3 light_color = vec3(1.0);
 
 struct Volume {
 	float absorption;
 	float scattering; 
 };
 Volume volume = {0.1, 0.1};
-float step_size = 0.2;
+float step_size = 0.5;
 
 float jitter_str = 0.38; // range [0,1]
+
+uniform sampler3D worley_n;
+uniform int worley_channel;
+uniform vec3 worley_offset;
 
 bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1);
 float linear_depth();
 float gold_noise(in vec2 xy, in float seed);
+float remap(float t, float old_min, float old_max, float new_min, float new_max);
+
+float sample_density(vec3 p) {
+	if (distance(p, sphere.p) > sphere.r*sphere.r) {
+		return 0.0;
+	}
+
+	vec4 low_freq_noise = texture(worley_n,0.1*p);
+
+	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
+	float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
+
+	//float base_cloud = remap(low_freq_noise.r, -(1.0-low_freq_fbm), 1.0, 0.0, 1.0);
+	float base_cloud = remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0) - 0.5;
+
+	return max(base_cloud*3.0, 0);
+}
 
 float light_transmission(vec3 origin, vec3 dest) {
 	Ray n = {origin, normalize(dest-origin)};
@@ -65,10 +86,11 @@ float light_transmission(vec3 origin, vec3 dest) {
 	if (intersect_sphere(sphere, n, t0, t1) && t1 >= 0) {
 		// increase step size for light transmission calculations
 		float tau = 0.0;
-		for (float t = 0; t < t1; t += step_size) {
-			tau -= 1.0;
+		for (float t = 0; t < t1; t += step_size*2) {
+			vec3 p = n.o + n.d*t;
+			tau += sample_density(p);
 		}
-		trans = exp(tau * step_size * (volume.absorption+volume.scattering));
+		trans = exp(-tau * step_size * (volume.absorption+volume.scattering));
 	}
 	//return exp(-t1 * (volume.absorption+volume.scattering));
 	return trans;
@@ -83,25 +105,24 @@ vec3 raymarching(Ray r, float t0, float t1) {
 	// impact of noise could be lessend by blur, avoiding small regions with much transmission or smaller perturbation
 	float n = (gold_noise(gl_FragCoord.xy, 0.9787)-0.5) * jitter_str + 0.5;
 	for (float t = t0+step_size*n; t < t1; t += step_size) {
-		transmission *= exp(-step_size*(volume.absorption+volume.scattering)); // absorption and out scattering
+		vec3 p = r.o + t*r.d;
+		float density = sample_density(p);
 
-		// compute in scattering from light source
-		float l_transmission = light_transmission(r.o + r.d*t, light_pos);
-		result += transmission * l_transmission * light_color * volume.scattering * step_size;
+		transmission *= exp(-density*step_size*(volume.absorption+volume.scattering)); // absorption and out scattering
+
+		if (density > 0) {
+			// compute in scattering from light source
+			float l_transmission = light_transmission(r.o + r.d*t, light_pos);
+			result += transmission * (l_transmission * light_color) * volume.scattering * step_size * density;
+		}
 	}
 
 	result += texture(frame, tex_coord).rgb * transmission;
 	return result;
 }
 
-uniform sampler3D worley_n;
-//uniform sampler2D worley_n;
-uniform int worley_channel;
-uniform vec3 worley_offset;
-
 void main()
 {
-	//vec4 s = texture(worley_n, tex_coord+worley_offset.xy);
 	vec4 s = texture(worley_n, vec3(tex_coord, 0)+worley_offset);
 	if (worley_channel == 0) {
 		FragColor = vec4(s.rrr,1);
@@ -114,9 +135,6 @@ void main()
 		return;
 	} else if (worley_channel == 3) {
 		FragColor = vec4(s.aaa,1);
-		return;
-	}else if (worley_channel == 4) {
-		FragColor = s;
 		return;
 	}
 	
@@ -184,6 +202,11 @@ bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1) {
 
 	return true;
 }
+
+float remap(float t, float old_min, float old_max, float new_min, float new_max) {
+	return new_min + ((t-old_min) / (old_max-old_min) * (new_max-new_min));
+}
+
 
 float PI  = 3.14159265358979323846264;
 float PHI = 1.61803398874989484820459; 

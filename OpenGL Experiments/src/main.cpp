@@ -45,7 +45,7 @@ Camera camera = { glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(
 
 bool can_move = true;
 
-int worley_channel = 0;
+int worley_channel = -1;
 glm::vec3 worley_offset = glm::vec3(0.0, 0.0, 0.0);
 
 int main()
@@ -232,7 +232,7 @@ int main()
 	unsigned int noise_res_y = 128;
 	unsigned int noise_res_z = 128;
 
-	PerlinWorley3D<float> w(noise_res_x, noise_res_y, noise_res_z, 2, 2, 2, { {8,8,8}, {1,1,1}, {1,1,1}, {1,1,1} });
+	PerlinWorley3D<float> w(noise_res_x, noise_res_y, noise_res_z, 2, 2, 2, { {8,8,8}, {10,10,10}, {16,16,16}, {20,20,20} });
 
 	unsigned int w_texture;
 	glGenTextures(1, &w_texture);
@@ -328,7 +328,7 @@ int main()
 		glViewport(0, 0, screen_x, screen_y);
 
 		// rendering
-		glClearColor(0.25, 0.5, 0.1, 1);
+		glClearColor(0.3, 0.65, 1.0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		program.use();
@@ -466,7 +466,7 @@ void handle_input(GLFWwindow* window)
 		dy -= 1;
 
 	if (glfwGetKey(window, GLFW_KEY_0)) {
-		worley_channel = 4;
+		worley_channel = -1;
 	}
 	if (glfwGetKey(window, GLFW_KEY_1)) {
 		worley_channel = 0;

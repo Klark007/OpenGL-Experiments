@@ -3,7 +3,7 @@
 #include "Perlin3DFBM.h"
 #include "Worley-Noise/Worley Noise/Worley3DFBM.h"
 
-#define NR_OCT 4
+#define NR_OCT 3
 
 template<class T>
 class PerlinWorley3D : public Noise<T> {
@@ -28,14 +28,13 @@ template<class T>
 void PerlinWorley3D<T>::gen_img() {
   // change first channel into perlin-worley
   p.normalize();
-  w.normalize();
 
   w.invert();
-  this->img_data = w.get_vec();
+  w.add(-0.2);
+  w.clamp(0,w.max());
+  w.normalize();
 
-  // temp
-  this->set_channel(1, w.get_channel(0));
-  this->set_channel(2, p.get_channel(0));
+  this->img_data = w.get_vec();
 
   std::vector<T> perlin_data = p.get_vec();
 
