@@ -263,9 +263,6 @@ int main()
 	unsigned int weather_res_y = 256;
 
 	PerlinFBM<float> high_coverage_map(weather_res_x, weather_res_y, 2, 2, 5);
-	high_coverage_map.add(+0.2);
-	high_coverage_map.clamp(0,1);
-	high_coverage_map.normalize();
 
 	unsigned int weather_texture;
 	glGenTextures(1, &weather_texture);
@@ -281,9 +278,12 @@ int main()
 	glm::vec3 cloud_color = glm::vec3(1);
 
 	float cloud_global_density = 6.0;
-	float base_cloud_translation = -0.25;
+	float base_cloud_translation = 1.0;
 	int cloud_only_worley_perlin = 0;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
+
+	// to add
+	// height, global coverage, light strength, stepsize/nr steps
 
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
@@ -411,11 +411,10 @@ int main()
 			ImGui::Begin("Edit settings (Clouds)");
 			ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
 
-			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 10.0f);
+			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 25.0f);
 			ImGui::SliderFloat("Base cloud translation", &base_cloud_translation, -1.0f, 1.0f);
 			
-			if (ImGui::Button("Only use Perlin-Worley"))
-				cloud_only_worley_perlin = !cloud_only_worley_perlin;
+			ImGui::Checkbox("Only use Perlin-Worley", (bool*)&cloud_only_worley_perlin);
 
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
 
