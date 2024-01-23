@@ -276,8 +276,11 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	glm::vec3 cloud_color = glm::vec3(1);
+	float cloud_light_strength = 1.8;
 
+	float cloud_global_coverage = 1.0;
 	float cloud_global_density = 6.0;
+
 	float base_cloud_translation = 1.0;
 	int cloud_only_worley_perlin = 0;
 
@@ -285,7 +288,7 @@ int main()
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
 
 	// to add
-	// height, global coverage, light strength, scale of texture reads
+	// height, global coverage, scale of texture reads
 
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
@@ -387,6 +390,9 @@ int main()
 			post_program.set_vec3f("worley_offset", worley_offset);
 			
 			post_program.set_vec3f("light_color", cloud_color);
+			post_program.set1f("light_strength", cloud_light_strength);
+			
+			post_program.set1f("global_coverage", cloud_global_coverage);
 			post_program.set1f("global_density", cloud_global_density);
 			post_program.set1f("base_cloud_translation", base_cloud_translation);
 			post_program.set1i("only_worley_perlin", cloud_only_worley_perlin);
@@ -414,7 +420,9 @@ int main()
 		{
 			ImGui::Begin("Edit settings (Clouds)");
 			ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
+			ImGui::SliderFloat("Light strength", &cloud_light_strength, 0.0f, 10.0f);
 
+			ImGui::SliderFloat("Global coverage", &cloud_global_coverage, 0.0f, 1.0f);
 			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 25.0f);
 			ImGui::SliderFloat("Base cloud translation", &base_cloud_translation, -1.0f, 1.0f);
 			

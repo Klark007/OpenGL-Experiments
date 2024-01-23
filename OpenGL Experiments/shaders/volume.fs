@@ -42,6 +42,7 @@ struct Ray {
 // sun light not small point lights
 vec3 light_pos = vec3(0.0, 15.0, -15.0);
 uniform vec3 light_color;
+uniform float light_strength;
 
 struct Volume {
 	float absorption;
@@ -58,7 +59,7 @@ uniform sampler3D worley_n;
 uniform sampler2D weather_map;
 uniform float global_density;
 uniform int only_worley_perlin;
-float global_coverage = 1.0;
+uniform float global_coverage;
 
 uniform int worley_channel;
 uniform vec3 worley_offset;
@@ -90,8 +91,7 @@ float density_altering_height_function(vec3 p) {
 float weather_map_sample(vec3 p) {
 	vec3 weather_sample =  texture(weather_map, p.xz * 0.06 + worley_offset.xy).rgb;
 	float hc_sample = weather_sample.r;
-	float res = clamp(global_coverage-0.5, 0, 1) * hc_sample * 2;
-	return res;
+	return clamp(global_coverage-0.5, 0, 1) * hc_sample * 2;
 }
 
 float low_freq(vec3 p) {
@@ -162,7 +162,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		if (density > 0) {
 			// compute in scattering from light source
 			float l_transmission = light_transmission(r.o + r.d*t, light_pos);
-			result += transmission * (l_transmission * light_color) * volume.scattering * step_size * density;
+			result += transmission * (l_transmission * light_color * light_strength) * volume.scattering * step_size * density;
 		}
 	}
 
