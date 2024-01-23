@@ -31,8 +31,8 @@ struct Sphere {
 	vec3 p;
 	float r;
 };
-Sphere sphere = {vec3(0.0, 0.0, -15.0), 10};
-vec2 cloud_min_max_height = vec2(-3.0,5.0);
+Sphere sphere = {vec3(0.0, 5.0, -15.0), 10};
+vec2 cloud_min_max_height = vec2(3.0,8.0);
 
 struct Ray {
 	vec3 o;
@@ -48,7 +48,7 @@ struct Volume {
 	float scattering; 
 };
 Volume volume = {0.1, 0.1};
-float step_size = 0.5;
+uniform int nr_steps;
 
 uniform float jitter_str = 0.9; // range [0,1]
 
@@ -129,9 +129,11 @@ float light_transmission(vec3 origin, vec3 dest) {
 
 	float trans = 1.0;
 	if (intersect_sphere(sphere, n, t0, t1) && t1 >= 0) {
+		float step_size = (t1-t0) / nr_steps * 2;
+
 		// increase step size for light transmission calculations
 		float tau = 0.0;
-		for (float t = 0; t < t1; t += step_size*2) {
+		for (float t = 0; t < t1; t += step_size) {
 			vec3 p = n.o + n.d*t;
 			tau += sample_density(p);
 		}
@@ -144,6 +146,8 @@ float light_transmission(vec3 origin, vec3 dest) {
 vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
+
+	float step_size = (t1-t0) / nr_steps;
 
 	vec3 result = vec3(0.0);
 	// this introduces noise but removes Banding

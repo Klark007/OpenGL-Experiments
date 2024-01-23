@@ -280,10 +280,12 @@ int main()
 	float cloud_global_density = 6.0;
 	float base_cloud_translation = 1.0;
 	int cloud_only_worley_perlin = 0;
+
+	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
 
 	// to add
-	// height, global coverage, light strength, stepsize/nr steps
+	// height, global coverage, light strength, scale of texture reads
 
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
@@ -388,6 +390,8 @@ int main()
 			post_program.set1f("global_density", cloud_global_density);
 			post_program.set1f("base_cloud_translation", base_cloud_translation);
 			post_program.set1i("only_worley_perlin", cloud_only_worley_perlin);
+
+			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
 
 		}
@@ -416,6 +420,7 @@ int main()
 			
 			ImGui::Checkbox("Only use Perlin-Worley", (bool*)&cloud_only_worley_perlin);
 
+			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
 
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
