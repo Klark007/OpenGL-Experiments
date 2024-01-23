@@ -41,7 +41,7 @@ struct Ray {
 
 // sun light not small point lights
 vec3 light_pos = vec3(0.0, 15.0, -15.0);
-vec3 light_color = vec3(1.0);
+uniform vec3 light_color;
 
 struct Volume {
 	float absorption;
@@ -50,10 +50,14 @@ struct Volume {
 Volume volume = {0.1, 0.1};
 float step_size = 0.5;
 
-float jitter_str = 1.0; //0.38; // range [0,1]
+uniform float jitter_str = 0.9; // range [0,1]
+
+uniform float base_cloud_translation;
 
 uniform sampler3D worley_n;
 uniform sampler2D weather_map;
+uniform float global_density;
+uniform int only_worley_perlin;
 float global_coverage = 1.0;
 
 uniform int worley_channel;
@@ -87,7 +91,18 @@ float weather_map_sample(vec3 p) {
 	vec3 weather_sample =  texture(weather_map, p.xz * 0.06 + worley_offset.xy).rgb;
 	float hc_sample = weather_sample.r;
 	float res = clamp(global_coverage-0.5, 0, 1) * hc_sample * 2;
-	return hc_sample;
+	return res;
+}
+
+float low_freq(vec3 p) {
+	vec4 low_freq_noise = texture(worley_n,0.1*p);
+
+	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
+	float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
+	if (only_worley_perlin == 1) {
+		low_freq_fbm = 0.0;
+	}
+	return clamp(remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0) + base_cloud_translation, 0, 1);
 }
 
 float sample_density(vec3 p) {
@@ -95,12 +110,7 @@ float sample_density(vec3 p) {
 		return 0.0;
 	}
 
-	vec4 low_freq_noise = texture(worley_n,0.1*p);
-
-	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
-	float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
-
-	float base_cloud = clamp(remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0) - 0.25, 0, 1);
+	float base_cloud = low_freq(p);
 
 	float shape_altering = shape_altering_height_function(p);
 	float density_altering = density_altering_height_function(p);
@@ -108,7 +118,7 @@ float sample_density(vec3 p) {
 
 	base_cloud *= shape_altering;
 	base_cloud = clamp(remap(base_cloud, 1-global_coverage*wm, 1, 0, 1), 0, 1) * density_altering;
-	return base_cloud * 6;
+	return base_cloud * global_density;
 }
 
 float light_transmission(vec3 origin, vec3 dest) {
@@ -199,13 +209,7 @@ void main()
 				FragColor = vec4(global_coverage*weather_map_sample(r.o+r.d*t0));
 				return;
 			} else if (worley_channel == 2) {
-				vec4 low_freq_noise = texture(worley_n,0.1*(r.o+r.d*t0));
-
-				vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
-				float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
-
-				float base_cloud = remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0);
-				FragColor = vec4(base_cloud);
+				FragColor = vec4(low_freq(r.o+r.d*t0));
 				return;
 			}
 			if (worley_channel == 3) {

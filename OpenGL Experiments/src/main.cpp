@@ -2,6 +2,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -93,6 +97,15 @@ int main()
 
 	glfwSwapInterval(1); // default swap interval is 0 which can lead to screen tearing
 
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_POLYGON_OFFSET_FILL);
@@ -265,44 +278,13 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	/*
-	unsigned int w_texture;
-	glGenTextures(1, &w_texture);
+	glm::vec3 cloud_color = glm::vec3(1);
 
-	PerlinFBM<float> p1 (noise_res_x, noise_res_y, 2, 2, 3);
-	PerlinFBM<float> p2(noise_res_x, noise_res_y, 2, 2, 5);
+	float cloud_global_density = 6.0;
+	float base_cloud_translation = -0.25;
+	int cloud_only_worley_perlin = 0;
+	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
 
-	Worley<float> w (noise_res_x, noise_res_y, { {14,14},{16,16},{24,24} });
-	w.invert();
-
-	//WorleyFBM<float> w3(noise_res_x, noise_res_y, { {14,14},{1,1},{1,1} }, 5);
-	//w3.invert();
-	
-
-	w.set_channel(1, p1.get_channel(0));
-	w.set_channel(2, p2.get_channel(0));
-
-	*/
-
-	/*
-	w.scale_channel(0, 0.35);
-	w.offset_channel(0, 0.55);
-
-	w.set_channel(1, w.get_channel(0));
-	w.set_channel(2, p.get_channel(0));
-	
-	w.multiply_channel(0, p.get_channel(0));
-	
-	
-	glBindTexture(GL_TEXTURE_2D, w_texture);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, noise_res_x, noise_res_y, 0, GL_RGB, GL_FLOAT, w.get_data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	*/
-	
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
 	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
@@ -397,8 +379,19 @@ int main()
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, frame_ds);
 
-		post_program.set1i("worley_channel", worley_channel);
-		post_program.set_vec3f("worley_offset", worley_offset);
+		// interactive:
+		{
+			post_program.set1i("worley_channel", worley_channel);
+			post_program.set_vec3f("worley_offset", worley_offset);
+			
+			post_program.set_vec3f("light_color", cloud_color);
+			post_program.set1f("global_density", cloud_global_density);
+			post_program.set1f("base_cloud_translation", base_cloud_translation);
+			post_program.set1i("only_worley_perlin", cloud_only_worley_perlin);
+			post_program.set1f("jitter_str", cloud_jitter);
+
+		}
+
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_3D, w_texture);
 
@@ -410,12 +403,41 @@ int main()
 
 		glEnable(GL_DEPTH_TEST);
 
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		{
+			ImGui::Begin("Edit settings (Clouds)");
+			ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
+
+			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 10.0f);
+			ImGui::SliderFloat("Base cloud translation", &base_cloud_translation, -1.0f, 1.0f);
+			
+			if (ImGui::Button("Only use Perlin-Worley"))
+				cloud_only_worley_perlin = !cloud_only_worley_perlin;
+
+			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
+
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+			ImGui::End();
+		}
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		// buffer
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
+
 	// destroy window and clean up resources
+	glfwDestroyWindow(window);
 	glfwTerminate();
 }
 
@@ -465,9 +487,11 @@ void handle_input(GLFWwindow* window)
 {
 	// to get comparison pictures
 	if (glfwGetKey(window, GLFW_KEY_X)) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		can_move = false;
 	}
 	if (glfwGetKey(window, GLFW_KEY_Y)) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		can_move = true;
 	}
 
