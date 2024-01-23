@@ -288,7 +288,7 @@ int main()
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
 
 	// to add
-	// height, global coverage, scale of texture reads
+	// height, scale of texture reads
 
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;

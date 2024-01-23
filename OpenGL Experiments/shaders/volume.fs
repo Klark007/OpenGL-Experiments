@@ -31,8 +31,14 @@ struct Sphere {
 	vec3 p;
 	float r;
 };
-Sphere sphere = {vec3(0.0, 5.0, -15.0), 10};
-vec2 cloud_min_max_height = vec2(3.0,8.0);
+Sphere sphere = {vec3(0.0, 11.5, -15.0), 10};
+
+struct AABB {
+	vec2 min_max[3];
+};
+AABB cloud_bounding_box = {vec2[](vec2(-30, 30), vec2(10, 13), vec2(-30, 30))};
+
+vec2 cloud_min_max_height = vec2(10.0,13.0);
 
 struct Ray {
 	vec3 o;
@@ -40,7 +46,7 @@ struct Ray {
 };
 
 // sun light not small point lights
-vec3 light_pos = vec3(0.0, 15.0, -15.0);
+vec3 light_pos = vec3(0.0, 20.0, 20.0);
 uniform vec3 light_color;
 uniform float light_strength;
 
@@ -65,6 +71,7 @@ uniform int worley_channel;
 uniform vec3 worley_offset;
 
 bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1);
+bool intersect_aabb(AABB box, Ray r, out float t0, out float t1);
 float linear_depth();
 float gold_noise(in vec2 xy, in float seed);
 float remap(float t, float old_min, float old_max, float new_min, float new_max);
@@ -106,7 +113,7 @@ float low_freq(vec3 p) {
 }
 
 float sample_density(vec3 p) {
-	if (distance(p, sphere.p) > sphere.r*sphere.r) {
+	if (p.x < cloud_bounding_box.min_max[0].x || p.x > cloud_bounding_box.min_max[0].y || p.y < cloud_bounding_box.min_max[1].x || p.y > cloud_bounding_box.min_max[1].y || p.z < cloud_bounding_box.min_max[2].x || p.z > cloud_bounding_box.min_max[2].y) {
 		return 0.0;
 	}
 
@@ -128,14 +135,20 @@ float light_transmission(vec3 origin, vec3 dest) {
 	float t1;
 
 	float trans = 1.0;
-	if (intersect_sphere(sphere, n, t0, t1) && t1 >= 0) {
+	if (intersect_aabb(cloud_bounding_box, n, t0, t1) && t1 >= 0) {
 		float step_size = (t1-t0) / nr_steps * 2;
 
 		// increase step size for light transmission calculations
 		float tau = 0.0;
-		for (float t = 0; t < t1; t += step_size) {
+		float t = 0;
+		for (int c = 0; c < nr_steps/2; c++) {
+			if (!(t < t1)) {
+				break;
+			}
 			vec3 p = n.o + n.d*t;
 			tau += sample_density(p);
+
+			t += step_size;
 		}
 		trans = exp(-tau * step_size * (volume.absorption+volume.scattering));
 	}
@@ -146,26 +159,31 @@ float light_transmission(vec3 origin, vec3 dest) {
 vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
-
 	float step_size = (t1-t0) / nr_steps;
 
 	vec3 result = vec3(0.0);
 	// this introduces noise but removes Banding
 	// impact of noise could be lessend by blur, avoiding small regions with much transmission or smaller perturbation
 	float n = (gold_noise(gl_FragCoord.xy, 0.9787)-0.5) * jitter_str + 0.5;
-	for (float t = t0+step_size*n; t < t1; t += step_size) {
+	float t = t0+step_size*n;
+	for (int c = 0; c < nr_steps; c++) {
+		if (!(t < t1)) {
+			break;
+		}
 		vec3 p = r.o + t*r.d;
 		float density = sample_density(p);
-
+		
 		transmission *= exp(-density*step_size*(volume.absorption+volume.scattering)); // absorption and out scattering
-
+		
 		if (density > 0) {
 			// compute in scattering from light source
 			float l_transmission = light_transmission(r.o + r.d*t, light_pos);
 			result += transmission * (l_transmission * light_color * light_strength) * volume.scattering * step_size * density;
 		}
-	}
 
+		t += step_size;
+	}
+	
 	result += texture(frame, tex_coord).rgb * transmission;
 	return result;
 }
@@ -193,7 +211,7 @@ void main()
 	float t1;
 
 	vec4 background_color = texture(frame, tex_coord);
-	if (intersect_sphere(sphere, r, t0, t1) && t1 >= 0) {
+	if (intersect_aabb(cloud_bounding_box, r, t0, t1) && t1 >= 0) {
 		bool inside = (t0 < 0);
 
 		float frame_depth = linear_depth();
@@ -209,6 +227,7 @@ void main()
 		if (inside) {
 			FragColor = vec4(raymarching(r, 0, t), 1.0);
 		} else {
+			/*
 			if (worley_channel == 1) {
 				FragColor = vec4(global_coverage*weather_map_sample(r.o+r.d*t0));
 				return;
@@ -220,6 +239,8 @@ void main()
 				FragColor = vec4(vec3(sample_density(r.o+r.d*t0)),1);
 				return;
 			}
+			*/
+
 			FragColor = vec4(raymarching(r, t0, t1), 1.0);
 		}
 	} else {
@@ -259,6 +280,26 @@ bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1) {
 
 	t0 = min(x_0, x_1);
 	t1 = max(x_0, x_1);
+
+	return true;
+}
+
+bool intersect_aabb(AABB box, Ray r, out float t0, out float t1) {
+	vec3 rec_dir = 1.0 / r.d;
+
+	vec2 t_x = (box.min_max[0] - r.o.x) * rec_dir.x;
+	vec2 t_y = (box.min_max[1] - r.o.y) * rec_dir.y;
+	vec2 t_z = (box.min_max[2] - r.o.z) * rec_dir.z;
+
+	float t_min = max(max(min(t_x.x, t_x.y), min(t_y.x, t_y.y)), min(t_z.x, t_z.y));
+	float t_max = min(min(max(t_x.x, t_x.y), max(t_y.x, t_y.y)), max(t_z.x, t_z.y));
+
+	if (t_min > t_max) {
+		return false;
+	}
+
+	t0 = t_min;
+	t1 = t_max;
 
 	return true;
 }
