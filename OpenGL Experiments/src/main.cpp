@@ -22,6 +22,7 @@
 #define NR_OCCLUDER_SAMPLES 16
 
 #include "noise/PerlinWorley3D.h"
+#include "noise/PerlinFBM.h"
 
 #include <iostream>
 #include <memory>
@@ -244,7 +245,25 @@ int main()
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+	unsigned int weather_res_x = 256;
+	unsigned int weather_res_y = 256;
+
+	PerlinFBM<float> high_coverage_map(weather_res_x, weather_res_y, 2, 2, 5);
+	high_coverage_map.add(+0.2);
+	high_coverage_map.clamp(0,1);
+	high_coverage_map.normalize();
+
+	unsigned int weather_texture;
+	glGenTextures(1, &weather_texture);
 	
+	glBindTexture(GL_TEXTURE_2D, weather_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, weather_res_x, weather_res_y, 0, GL_RED, GL_FLOAT, high_coverage_map.get_data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	/*
 	unsigned int w_texture;
@@ -294,6 +313,7 @@ int main()
 	post_program.set1i("frame", 2);
 	post_program.set1i("depth", 3);
 	post_program.set1i("worley_n", 4);
+	post_program.set1i("weather_map",5);
 	post_program.set1f("projection.y_fov", fov_y);
 	post_program.set1f("projection.d_near", near_plane);
 	post_program.set1f("projection.d_far", far_plane);
@@ -380,8 +400,11 @@ int main()
 		post_program.set1i("worley_channel", worley_channel);
 		post_program.set_vec3f("worley_offset", worley_offset);
 		glActiveTexture(GL_TEXTURE4);
-		//glBindTexture(GL_TEXTURE_2D, w_texture);
 		glBindTexture(GL_TEXTURE_3D, w_texture);
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, weather_texture);
+		
 		
 		ground_plane.draw(post_program);
 

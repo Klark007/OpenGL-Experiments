@@ -31,7 +31,8 @@ struct Sphere {
 	vec3 p;
 	float r;
 };
-Sphere sphere = {vec3(0.0, 0.0, -15.0), 5};
+Sphere sphere = {vec3(0.0, 0.0, -15.0), 10};
+vec2 cloud_min_max_height = vec2(-3.0,5.0);
 
 struct Ray {
 	vec3 o;
@@ -49,9 +50,12 @@ struct Volume {
 Volume volume = {0.1, 0.1};
 float step_size = 0.5;
 
-float jitter_str = 0.38; // range [0,1]
+float jitter_str = 1.0; //0.38; // range [0,1]
 
 uniform sampler3D worley_n;
+uniform sampler2D weather_map;
+float global_coverage = 1.0;
+
 uniform int worley_channel;
 uniform vec3 worley_offset;
 
@@ -59,6 +63,32 @@ bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1);
 float linear_depth();
 float gold_noise(in vec2 xy, in float seed);
 float remap(float t, float old_min, float old_max, float new_min, float new_max);
+
+float get_height_fraction(float y) {
+	float f = (y-cloud_min_max_height.x) / (cloud_min_max_height.y - cloud_min_max_height.x);
+	return clamp(f,0,1);
+}
+
+float shape_altering_height_function(vec3 p) {
+	float f = get_height_fraction(p.y);
+	float SA_b = clamp(remap(f,0,0.7,0,1),0,1);
+	float SA_t = clamp(remap(f,0.2,1,1,0),0,1);
+	return SA_b * SA_t;
+}
+
+float density_altering_height_function(vec3 p) {
+	float f = get_height_fraction(p.y);
+	float DA_b = f * clamp(remap(f,0,0.15,0,1),0,1);
+	float DA_t = clamp(remap(f,0.9,1,1,0),0,1);
+	return DA_b * DA_t * 3.5;
+}
+
+float weather_map_sample(vec3 p) {
+	vec3 weather_sample =  texture(weather_map, p.xz * 0.06 + worley_offset.xy).rgb;
+	float hc_sample = weather_sample.r;
+	float res = clamp(global_coverage-0.5, 0, 1) * hc_sample * 2;
+	return hc_sample;
+}
 
 float sample_density(vec3 p) {
 	if (distance(p, sphere.p) > sphere.r*sphere.r) {
@@ -70,10 +100,15 @@ float sample_density(vec3 p) {
 	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
 	float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
 
-	//float base_cloud = remap(low_freq_noise.r, -(1.0-low_freq_fbm), 1.0, 0.0, 1.0);
-	float base_cloud = remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0) - 0.5;
+	float base_cloud = clamp(remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0) - 0.25, 0, 1);
 
-	return max(base_cloud*3.0, 0);
+	float shape_altering = shape_altering_height_function(p);
+	float density_altering = density_altering_height_function(p);
+	float wm = weather_map_sample(p);
+
+	base_cloud *= shape_altering;
+	base_cloud = clamp(remap(base_cloud, 1-global_coverage*wm, 1, 0, 1), 0, 1) * density_altering;
+	return base_cloud * 6;
 }
 
 float light_transmission(vec3 origin, vec3 dest) {
@@ -125,18 +160,18 @@ void main()
 {
 	vec4 s = texture(worley_n, vec3(tex_coord, 0)+worley_offset);
 	if (worley_channel == 0) {
-		FragColor = vec4(s.rrr,1);
-		return;
-	} else if (worley_channel == 1) {
 		FragColor = vec4(s.ggg,1);
 		return;
-	} else if (worley_channel == 2) {
-		FragColor = vec4(s.bbb,1);
-		return;
-	} else if (worley_channel == 3) {
-		FragColor = vec4(s.aaa,1);
-		return;
-	}
+	}// else if (worley_channel == 1) {
+	//	FragColor = vec4(s.ggg,1);
+	//	return;
+	//} else if (worley_channel == 2) {
+	//	FragColor = vec4(s.bbb,1);
+	//	return;
+	//} else if (worley_channel == 3) {
+	//	FragColor = vec4(s.aaa,1);
+	//	return;
+	//}
 	
 
 	Ray r = {w_pos + vec3(0,0,projection.d_near), normalize(w_dir)};
@@ -160,6 +195,23 @@ void main()
 		if (inside) {
 			FragColor = vec4(raymarching(r, 0, t), 1.0);
 		} else {
+			if (worley_channel == 1) {
+				FragColor = vec4(global_coverage*weather_map_sample(r.o+r.d*t0));
+				return;
+			} else if (worley_channel == 2) {
+				vec4 low_freq_noise = texture(worley_n,0.1*(r.o+r.d*t0));
+
+				vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
+				float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
+
+				float base_cloud = remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0);
+				FragColor = vec4(base_cloud);
+				return;
+			}
+			if (worley_channel == 3) {
+				FragColor = vec4(vec3(sample_density(r.o+r.d*t0)),1);
+				return;
+			}
 			FragColor = vec4(raymarching(r, t0, t1), 1.0);
 		}
 	} else {
