@@ -253,10 +253,25 @@ int main()
 	glBindTexture(GL_TEXTURE_3D, w_texture);
 
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, noise_res_x, noise_res_y, noise_res_z, 0, GL_RGBA, GL_FLOAT, w.get_data());
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+	unsigned int high_freq_res = 32;
+
+	PerlinWorley3D<float> w2(high_freq_res, high_freq_res, high_freq_res, 2, 2, 2, { {6,6,6}, {8,8,8}, {12,12,12}, {1,1,1} });
+
+	unsigned int hf_texture;
+	glGenTextures(1, &hf_texture);
+	glBindTexture(GL_TEXTURE_3D, hf_texture);
+
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, high_freq_res, high_freq_res, high_freq_res, 0, GL_RGBA, GL_FLOAT, w2.get_data());
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
 	unsigned int weather_res_x = 256;
@@ -270,8 +285,8 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, weather_texture);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, weather_res_x, weather_res_y, 0, GL_RED, GL_FLOAT, high_coverage_map.get_data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -279,10 +294,16 @@ int main()
 	float cloud_light_strength = 1.8;
 
 	float cloud_global_coverage = 1.0;
-	float cloud_global_density = 6.0;
+	float cloud_global_density = 4.5;
+
+	float cloud_lf_scale = 0.1;
+	float cloud_hf_scale = 0.25;
+	float weather_scale = 0.06;
 
 	float base_cloud_translation = 1.0;
+
 	int cloud_only_worley_perlin = 0;
+	int cloud_only_low_frequency = 0;
 
 	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
@@ -301,6 +322,7 @@ int main()
 	post_program.set1i("depth", 3);
 	post_program.set1i("worley_n", 4);
 	post_program.set1i("weather_map",5);
+	post_program.set1i("high_freq_n",6);
 	post_program.set1f("projection.y_fov", fov_y);
 	post_program.set1f("projection.d_near", near_plane);
 	post_program.set1f("projection.d_far", far_plane);
@@ -394,8 +416,14 @@ int main()
 			
 			post_program.set1f("global_coverage", cloud_global_coverage);
 			post_program.set1f("global_density", cloud_global_density);
+
+			post_program.set1f("low_freq_scale", cloud_lf_scale);
+			post_program.set1f("high_freq_scale", cloud_hf_scale);
+			post_program.set1f("weather_scale", weather_scale);
+
 			post_program.set1f("base_cloud_translation", base_cloud_translation);
 			post_program.set1i("only_worley_perlin", cloud_only_worley_perlin);
+			post_program.set1i("only_low_freq", cloud_only_low_frequency);
 
 			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
@@ -407,6 +435,9 @@ int main()
 
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, weather_texture);
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_3D, hf_texture);
 		
 		
 		ground_plane.draw(post_program);
@@ -424,9 +455,15 @@ int main()
 
 			ImGui::SliderFloat("Global coverage", &cloud_global_coverage, 0.0f, 1.0f);
 			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 25.0f);
+
+			ImGui::SliderFloat("Low freq scale", &cloud_lf_scale, 0.0f, 1.0f);
+			ImGui::SliderFloat("High freq scale", &cloud_hf_scale, 0.0f, 1.0f);
+			ImGui::SliderFloat("Weather scale", &weather_scale, 0.0f, 1.0f);
+
 			ImGui::SliderFloat("Base cloud translation", &base_cloud_translation, -1.0f, 1.0f);
 			
-			ImGui::Checkbox("Only use Perlin-Worley", (bool*)&cloud_only_worley_perlin);
+			//ImGui::Checkbox("Only use Perlin-Worley", (bool*)&cloud_only_worley_perlin);
+			ImGui::Checkbox("Only use low frequency noise", (bool*)&cloud_only_low_frequency);
 
 			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);

@@ -36,9 +36,9 @@ Sphere sphere = {vec3(0.0, 11.5, -15.0), 10};
 struct AABB {
 	vec2 min_max[3];
 };
-AABB cloud_bounding_box = {vec2[](vec2(-30, 30), vec2(10, 13), vec2(-30, 30))};
+AABB cloud_bounding_box = {vec2[](vec2(-30, 30), vec2(9.5, 14), vec2(-30, 30))};
 
-vec2 cloud_min_max_height = vec2(10.0,13.0);
+vec2 cloud_min_max_height = vec2(10.0,13.5);
 
 struct Ray {
 	vec3 o;
@@ -63,9 +63,17 @@ uniform float base_cloud_translation;
 
 uniform sampler3D worley_n;
 uniform sampler2D weather_map;
+uniform sampler3D high_freq_n;
+
+uniform float low_freq_scale;
+uniform float high_freq_scale;
+uniform float weather_scale;
+
 uniform float global_density;
-uniform int only_worley_perlin;
 uniform float global_coverage;
+
+uniform int only_worley_perlin;
+uniform int only_low_freq;
 
 uniform int worley_channel;
 uniform vec3 worley_offset;
@@ -96,13 +104,13 @@ float density_altering_height_function(vec3 p) {
 }
 
 float weather_map_sample(vec3 p) {
-	vec3 weather_sample =  texture(weather_map, p.xz * 0.06 + worley_offset.xy).rgb;
+	vec3 weather_sample =  texture(weather_map, weather_scale*p.xz + worley_offset.xy).rgb;
 	float hc_sample = weather_sample.r;
 	return clamp(global_coverage-0.5, 0, 1) * hc_sample * 2;
 }
 
 float low_freq(vec3 p) {
-	vec4 low_freq_noise = texture(worley_n,0.1*p);
+	vec4 low_freq_noise = texture(worley_n,low_freq_scale*p + worley_offset);
 
 	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
 	float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
@@ -110,6 +118,20 @@ float low_freq(vec3 p) {
 		low_freq_fbm = 0.0;
 	}
 	return clamp(remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0) + base_cloud_translation, 0, 1);
+}
+
+float high_freq(vec3 p) {
+	if (only_low_freq == 1) {
+		return 0;
+	}
+
+	vec3 high_freq_noise = texture(high_freq_n,high_freq_scale*p + worley_offset).rgb;
+
+	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
+	float high_fbm = dot(high_freq_noise, fbm_weights);
+
+	float high_freq_modulated = 0.35 * exp(-global_coverage*0.75)*mix(high_fbm, 1-high_fbm, clamp(get_height_fraction(p.y)*5,0,1));
+	return high_freq_modulated;
 }
 
 float sample_density(vec3 p) {
@@ -123,8 +145,11 @@ float sample_density(vec3 p) {
 	float density_altering = density_altering_height_function(p);
 	float wm = weather_map_sample(p);
 
+	float details = high_freq(p);
+
 	base_cloud *= shape_altering;
-	base_cloud = clamp(remap(base_cloud, 1-global_coverage*wm, 1, 0, 1), 0, 1) * density_altering;
+	base_cloud = clamp(remap(base_cloud, 1-global_coverage*wm, 1, 0, 1), 0, 1);
+	base_cloud = clamp(remap(base_cloud,details,1,0,1),0,1) * density_altering;
 	return base_cloud * global_density;
 }
 
@@ -190,20 +215,22 @@ vec3 raymarching(Ray r, float t0, float t1) {
 
 void main()
 {
-	vec4 s = texture(worley_n, vec3(tex_coord, 0)+worley_offset);
+	vec4 s = texture(high_freq_n, vec3(tex_coord, 0)+worley_offset);
+	/*
 	if (worley_channel == 0) {
+		FragColor = vec4(s.rrr,1);
+		return;
+	} else if (worley_channel == 1) {
 		FragColor = vec4(s.ggg,1);
 		return;
-	}// else if (worley_channel == 1) {
-	//	FragColor = vec4(s.ggg,1);
-	//	return;
-	//} else if (worley_channel == 2) {
-	//	FragColor = vec4(s.bbb,1);
-	//	return;
-	//} else if (worley_channel == 3) {
-	//	FragColor = vec4(s.aaa,1);
-	//	return;
-	//}
+	} else if (worley_channel == 2) {
+		FragColor = vec4(s.bbb,1);
+		return;
+	} else if (worley_channel == 3) {
+		FragColor = vec4(s.aaa,1);
+		return;
+	}
+	*/
 	
 
 	Ray r = {w_pos + vec3(0,0,projection.d_near), normalize(w_dir)};
@@ -227,19 +254,17 @@ void main()
 		if (inside) {
 			FragColor = vec4(raymarching(r, 0, t), 1.0);
 		} else {
-			/*
-			if (worley_channel == 1) {
-				FragColor = vec4(global_coverage*weather_map_sample(r.o+r.d*t0));
+			if (worley_channel == 0) {
+				FragColor = vec4(vec3(low_freq(r.o+r.d*t0)),1);
+				return;
+			} else if (worley_channel == 1) {
+				FragColor = vec4(vec3(high_freq(r.o+r.d*t0)),1);
 				return;
 			} else if (worley_channel == 2) {
-				FragColor = vec4(low_freq(r.o+r.d*t0));
-				return;
-			}
-			if (worley_channel == 3) {
 				FragColor = vec4(vec3(sample_density(r.o+r.d*t0)),1);
 				return;
 			}
-			*/
+			
 
 			FragColor = vec4(raymarching(r, t0, t1), 1.0);
 		}
