@@ -292,6 +292,8 @@ int main()
 
 	glm::vec3 cloud_color = glm::vec3(1);
 	float cloud_light_strength = 1.8;
+	glm::vec3 cloud_ambient = glm::vec3(0);
+
 
 	float cloud_global_coverage = 1.0;
 	float cloud_global_density = 4.5;
@@ -300,7 +302,7 @@ int main()
 	float cloud_hf_scale = 0.25;
 	float weather_scale = 0.06;
 
-	float base_cloud_translation = 1.0;
+	float base_cloud_translation = 0.0;
 
 	int cloud_only_worley_perlin = 0;
 	int cloud_only_low_frequency = 0;
@@ -412,6 +414,7 @@ int main()
 			post_program.set_vec3f("worley_offset", worley_offset);
 			
 			post_program.set_vec3f("light_color", cloud_color);
+			post_program.set_vec3f("light_albedo", cloud_ambient);
 			post_program.set1f("light_strength", cloud_light_strength);
 			
 			post_program.set1f("global_coverage", cloud_global_coverage);
@@ -452,6 +455,7 @@ int main()
 			ImGui::Begin("Edit settings (Clouds)");
 			ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
 			ImGui::SliderFloat("Light strength", &cloud_light_strength, 0.0f, 10.0f);
+			ImGui::ColorEdit3("Cloud ambient", (float*)&cloud_ambient);
 
 			ImGui::SliderFloat("Global coverage", &cloud_global_coverage, 0.0f, 1.0f);
 			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 25.0f);

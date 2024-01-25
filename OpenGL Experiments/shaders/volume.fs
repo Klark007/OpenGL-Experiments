@@ -49,6 +49,7 @@ struct Ray {
 vec3 light_pos = vec3(0.0, 20.0, 20.0);
 uniform vec3 light_color;
 uniform float light_strength;
+uniform vec3 light_albedo;
 
 struct Volume {
 	float absorption;
@@ -203,7 +204,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		if (density > 0) {
 			// compute in scattering from light source
 			float l_transmission = light_transmission(r.o + r.d*t, light_pos);
-			result += transmission * (l_transmission * light_color * light_strength) * volume.scattering * step_size * density;
+			result += transmission * (l_transmission * light_color * light_strength + light_albedo) * volume.scattering * step_size * density;
 		}
 
 		t += step_size;
