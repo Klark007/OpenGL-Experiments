@@ -81,6 +81,9 @@
     <ClCompile Include="imgui\backends\imgui_impl_glfw.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="src\Texture.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -174,6 +177,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imstb_truetype.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Texture.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

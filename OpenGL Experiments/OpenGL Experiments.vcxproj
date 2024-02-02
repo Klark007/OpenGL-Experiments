@@ -41,6 +41,7 @@
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\backends\imgui_impl_glfw.h" />
@@ -74,6 +75,7 @@
     <ClInclude Include="src\Program.h" />
     <ClInclude Include="src\sampling\fdps.h" />
     <ClInclude Include="src\Shader.h" />
+    <ClInclude Include="src\Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\depth.vs" />
