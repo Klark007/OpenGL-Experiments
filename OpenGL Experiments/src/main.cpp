@@ -16,6 +16,7 @@
 
 #include "Model.h"
 #include "Material.h"
+#include "Texture.h"
 
 #include "Shader.h"
 #include "program.h"
@@ -245,55 +246,50 @@ int main()
 	unsigned int noise_res_x = 128;
 	unsigned int noise_res_y = 128;
 	unsigned int noise_res_z = 128;
-
 	PerlinWorley3D<float> w(noise_res_x, noise_res_y, noise_res_z, 2, 2, 2, { {8,8,8}, {10,10,10}, {16,16,16}, {20,20,20} });
-
-	unsigned int w_texture;
-	glGenTextures(1, &w_texture);
-	glBindTexture(GL_TEXTURE_3D, w_texture);
-
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, noise_res_x, noise_res_y, noise_res_z, 0, GL_RGBA, GL_FLOAT, w.get_data());
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+	Texture lf_texture = Texture(
+		std::string("worley_n"),
+		noise_res_x,
+		noise_res_y,
+		noise_res_z,
+		w.get_data(),
+		GL_RGBA,
+		GL_RGBA,
+		Texture_Filter::linear,
+		Texture_Wrap::repeat
+	);
 
 	unsigned int high_freq_res = 32;
-
 	PerlinWorley3D<float> w2(high_freq_res, high_freq_res, high_freq_res, 2, 2, 2, { {6,6,6}, {8,8,8}, {12,12,12}, {1,1,1} });
-
-	unsigned int hf_texture;
-	glGenTextures(1, &hf_texture);
-	glBindTexture(GL_TEXTURE_3D, hf_texture);
-
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, high_freq_res, high_freq_res, high_freq_res, 0, GL_RGBA, GL_FLOAT, w2.get_data());
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+	Texture hf_texture = Texture(
+		std::string("high_freq_n"),
+		high_freq_res,
+		high_freq_res,
+		high_freq_res,
+		w2.get_data(),
+		GL_RGBA,
+		GL_RGBA,
+		Texture_Filter::linear,
+		Texture_Wrap::repeat
+	);
 
 	unsigned int weather_res_x = 256;
 	unsigned int weather_res_y = 256;
-
 	PerlinFBM<float> high_coverage_map(weather_res_x, weather_res_y, 2, 2, 5);
-
-	unsigned int weather_texture;
-	glGenTextures(1, &weather_texture);
-	
-	glBindTexture(GL_TEXTURE_2D, weather_texture);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, weather_res_x, weather_res_y, 0, GL_RED, GL_FLOAT, high_coverage_map.get_data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	Texture weather_texture = Texture(
+		std::string("weather_map"),
+		weather_res_x,
+		weather_res_y,
+		high_coverage_map.get_data(),
+		GL_RGB,
+		GL_RED,
+		Texture_Filter::linear,
+		Texture_Wrap::repeat
+	);
 
 	glm::vec3 cloud_color = glm::vec3(1);
 	float cloud_light_strength = 1.8;
 	glm::vec3 cloud_ambient = glm::vec3(0);
-
 
 	float cloud_global_coverage = 1.0;
 	float cloud_global_density = 4.5;
@@ -311,7 +307,7 @@ int main()
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
 
 	// to add
-	// height, scale of texture reads
+	// height
 
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
@@ -322,9 +318,11 @@ int main()
 	post_program.use();
 	post_program.set1i("frame", 2);
 	post_program.set1i("depth", 3);
-	post_program.set1i("worley_n", 4);
-	post_program.set1i("weather_map",5);
-	post_program.set1i("high_freq_n",6);
+
+	lf_texture.set_texture_unit(post_program, 4);
+	hf_texture.set_texture_unit(post_program, 5);
+	weather_texture.set_texture_unit(post_program, 6);
+		
 	post_program.set1f("projection.y_fov", fov_y);
 	post_program.set1f("projection.d_near", near_plane);
 	post_program.set1f("projection.d_far", far_plane);
@@ -433,15 +431,9 @@ int main()
 
 		}
 
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_3D, w_texture);
-
-		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_2D, weather_texture);
-
-		glActiveTexture(GL_TEXTURE6);
-		glBindTexture(GL_TEXTURE_3D, hf_texture);
-		
+		lf_texture.bind();
+		hf_texture.bind();
+		weather_texture.bind();
 		
 		ground_plane.draw(post_program);
 

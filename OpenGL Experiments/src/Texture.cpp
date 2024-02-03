@@ -10,7 +10,8 @@ Texture_Filter get_mipmap_filter(Texture_Filter f) {
 	}
 }
 
-Texture::Texture(std::string& n, unsigned int res_x, unsigned int res_y, float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map)
+// into single function
+Texture::Texture(const std::string& n, unsigned int res_x, unsigned int res_y, const float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map)
 {
 	name = n;
 	type = GL_TEXTURE_2D;
@@ -32,7 +33,7 @@ Texture::Texture(std::string& n, unsigned int res_x, unsigned int res_y, float* 
 	glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
 }
 
-Texture::Texture(std::string& n, unsigned int res_x, unsigned int res_y, unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map)
+Texture::Texture(const std::string& n, unsigned int res_x, unsigned int res_y, const unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map)
 {
 	name = n;
 	type = GL_TEXTURE_2D;
@@ -54,17 +55,42 @@ Texture::Texture(std::string& n, unsigned int res_x, unsigned int res_y, unsigne
 	glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
 }
 
-Texture::Texture(std::string& n, unsigned int res_x, unsigned int res_y, unsigned int res_z, float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap)
+Texture::Texture(const std::string& n, unsigned int res_x, unsigned int res_y, unsigned int res_z, const float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap)
 {
+	name = n;
+	type = GL_TEXTURE_3D;
+
+	glGenTextures(1, &id);
+	glBindTexture(type, id);
+
+	glTexImage3D(type, 0, internal_format, res_x, res_y, res_z, 0, format, GL_FLOAT, data);
+
+	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filter);
+	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filter);
+	glTexParameteri(type, GL_TEXTURE_WRAP_S, wrap);
+	glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
+	glTexParameteri(type, GL_TEXTURE_WRAP_R, wrap);
 }
 
-Texture::Texture(std::string& n, unsigned int res_x, unsigned int res_y, unsigned int res_z, unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap)
+Texture::Texture(const std::string& n, unsigned int res_x, unsigned int res_y, unsigned int res_z, const unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap)
 {
+	name = n;
+	type = GL_TEXTURE_3D;
+
+	glGenTextures(1, &id);
+	glBindTexture(type, id);
+
+	glTexImage3D(type, 0, internal_format, res_x, res_y, res_z, 0, format, GL_UNSIGNED_BYTE, data);
+
+	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filter);
+	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filter);
+	glTexParameteri(type, GL_TEXTURE_WRAP_S, wrap);
+	glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
+	glTexParameteri(type, GL_TEXTURE_WRAP_R, wrap);
 }
 
 Texture::~Texture()
 {
-	std::cout << "DELETE" << std::endl;
 	glDeleteTextures(1,&id);
 }
 

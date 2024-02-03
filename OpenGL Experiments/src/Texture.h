@@ -20,11 +20,11 @@ enum Texture_Wrap
 class Texture
 {
 public:
-  Texture(std::string& name, unsigned int res_x, unsigned int res_y, float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map=false);
-  Texture(std::string& name, unsigned int res_x, unsigned int res_y, unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map=false);
+  Texture(const std::string& name, unsigned int res_x, unsigned int res_y, const float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map=false);
+  Texture(const std::string& name, unsigned int res_x, unsigned int res_y, const unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap, bool mip_map=false);
 
-  Texture(std::string& name, unsigned int res_x, unsigned int res_y, unsigned int res_z, float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap);
-  Texture(std::string& name, unsigned int res_x, unsigned int res_y, unsigned int res_z, unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap);
+  Texture(const std::string& name, unsigned int res_x, unsigned int res_y, unsigned int res_z, const float* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap);
+  Texture(const std::string& name, unsigned int res_x, unsigned int res_y, unsigned int res_z, const unsigned char* data, int internal_format, int format, Texture_Filter filter, Texture_Wrap wrap);
 
   ~Texture();
 private:

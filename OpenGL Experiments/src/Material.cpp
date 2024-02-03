@@ -89,7 +89,7 @@ TextureP Material::create_texture(std::string path, std::string name)
 			format,
 			Texture_Filter::linear,
 			Texture_Wrap::repeat,
-			false
+			true
 		);
 
 		stbi_image_free(data);
