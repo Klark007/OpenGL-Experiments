@@ -5,12 +5,11 @@ Shader::Shader(unsigned int shader_type)
 	shader = glCreateShader(shader_type);
 }
 
-Shader::Shader(unsigned int shader_type, const char* path)
+Shader::Shader(unsigned int shader_type, const std::string& path)
 {
 	shader = glCreateShader(shader_type);
-	add_source_from_file(path);
-	compile();
-	print_compile_error();
+	this->path = path;
+	recompile();
 }
 
 Shader::~Shader()
@@ -18,14 +17,14 @@ Shader::~Shader()
 	glDeleteShader(shader);
 }
 
-int Shader::add_source_from_file(const char* path)
+void Shader::add_source_from_file()
 {
 	std::ifstream file;
 	file.open(path);
 
 	if (!file.is_open()) {
 		std::cerr << "SHADER FILE NOT FOUND AT:" << path << std::endl;
-		return -1;
+		return;
 	}
 		
 	std::stringstream source_stream;
@@ -35,12 +34,20 @@ int Shader::add_source_from_file(const char* path)
 	const char* source_code = source_string.c_str();
 
 	glShaderSource(shader, 1, &source_code, NULL);
-	return 0;
+	file.close();
+	return;
 }
 
 void Shader::compile()
 {
 	glCompileShader(shader);
+}
+
+void Shader::recompile()
+{
+	add_source_from_file();
+	compile();
+	print_compile_error();
 }
 
 void Shader::get(unsigned int name, int* params)

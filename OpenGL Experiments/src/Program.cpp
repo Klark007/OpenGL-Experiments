@@ -37,6 +37,17 @@ void Program::link_program()
 	glLinkProgram(program);
 }
 
+void Program::recompile()
+{
+	link_program();
+	print_link_error();
+
+	// restore uniforms
+	for (const auto& uniform : uniforms) {
+		uniform.second.set(*this, uniform.first);
+	}
+}
+
 void Program::use()
 {
 	glUseProgram(program);
@@ -58,37 +69,44 @@ void Program::print_link_error()
 	}
 }
 
-void Program::set1i(const char* name, int value)
+void Program::set1i(const std::string& name, int value)
 {
+	uniforms.insert_or_assign(name, Uniform(value));
 	glUniform1i(get_location(name), value);
 }
 
-void Program::set1f(const char* name, float value)
+void Program::set1f(const std::string& name, float value)
 {
+	uniforms.insert_or_assign(name, Uniform(value));
 	glUniform1f(get_location(name), value);
 }
 
-void Program::set_vec2f(const char* name, glm::vec2& value)
+void Program::set_vec2f(const std::string& name, const glm::vec2& value)
 {
+	uniforms.insert_or_assign(name, Uniform(value));
 	glUniform2fv(get_location(name), 1, glm::value_ptr(value));
 }
 
-void Program::set_vec2f(const char* name, float x, float y)
+void Program::set_vec2f(const std::string& name, float x, float y)
 {
+	uniforms.insert_or_assign(name, Uniform(glm::vec2(x,y)));
 	glUniform2f(get_location(name), x, y);
 }
 
-void Program::set_vec3f(const char* name, glm::vec3& value)
+void Program::set_vec3f(const std::string& name, const glm::vec3& value)
 {
+	uniforms.insert_or_assign(name, Uniform(value));
 	glUniform3fv(get_location(name), 1, glm::value_ptr(value));
 }
 
-void Program::set_vec3f(const char* name, float r, float g, float b)
+void Program::set_vec3f(const std::string& name, float r, float g, float b)
 {
+	uniforms.insert_or_assign(name, Uniform(glm::vec3(r,g,b)));
 	glUniform3f(get_location(name), r, g, b);
 }
 
-void Program::set_mat4f(const char* name, glm::mat4& value)
+void Program::set_mat4f(const std::string& name, const glm::mat4& value)
 {
+	uniforms.insert_or_assign(name, Uniform(value));
 	glUniformMatrix4fv(get_location(name), 1, GL_FALSE, glm::value_ptr(value));
 }

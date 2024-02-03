@@ -112,6 +112,8 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_POLYGON_OFFSET_FILL);
 
+	bool recompile_shaders = false;
+
 	Model backpack = { "objects/backpack/backpack.obj" };
 
 	std::vector<Vertex> vertices = {
@@ -315,7 +317,6 @@ int main()
 	// to add
 	// height
 
-
 	std::vector<std::shared_ptr<Shader>> post_shaders;
 	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
 	post_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER, "shaders/volume.fs"));
@@ -342,6 +343,28 @@ int main()
 	{
 		// input
 		handle_input(window);
+		
+		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+			recompile_shaders = true;
+		}
+		if (recompile_shaders && glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE) {
+			std::cout << "Recompile" << std::endl;
+
+			for (std::shared_ptr<Shader>& shader : phong_shaders) {
+				shader->recompile();
+			}
+			program.recompile();
+			for (std::shared_ptr<Shader>& shader : depth_shaders) {
+				shader->recompile();
+			}
+			depth_program.recompile();
+			for (std::shared_ptr<Shader>& shader : post_shaders) {
+				shader->recompile();
+			}
+			post_program.recompile();
+
+			recompile_shaders = false;
+		}
 
 		// draw shadow to other textures
 		glBindFramebuffer(GL_FRAMEBUFFER, shadow_buffer);

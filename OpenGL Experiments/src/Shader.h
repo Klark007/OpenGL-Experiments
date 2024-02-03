@@ -14,15 +14,17 @@ class Shader
 {
 public:
 	Shader(unsigned int shader_type);
-	Shader(unsigned int shader_type, const char* path);
+	Shader(unsigned int shader_type, const std::string& path);
 	~Shader();
 
-	int  add_source_from_file(const char* path);
+	void  add_source_from_file();
 	void compile();
+	void recompile();
 
 private:
 	unsigned int shader;
 	char log[LOG_LENGTH];
+	std::string path;
 
 public:
 	void get(unsigned int name, int* params);
