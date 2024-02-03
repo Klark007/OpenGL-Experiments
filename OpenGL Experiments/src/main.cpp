@@ -44,8 +44,9 @@ void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos);
 void handle_input(GLFWwindow* window);
 
-int screen_x = 800;
+int screen_x = 900;
 int screen_y = 600;
+bool resize = false;
 
 Camera camera = { glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0) };
 
@@ -213,27 +214,32 @@ int main()
 	glGenFramebuffers(1, &main_buffer);
 
 	// color texture
-	unsigned int frame_color;
-	glGenTextures(1, &frame_color);
-	glBindTexture(GL_TEXTURE_2D, frame_color);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_x, screen_y, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // how does low resolution shadow map look if we use linear instead of nearest
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	Texture frame_color_t = Texture(
+		std::string("frame"),
+		screen_x,
+		screen_y,
+		(unsigned char*)0,
+		GL_RGB,
+		GL_RGB,
+		Texture_Filter::linear,
+		Texture_Wrap::clamp
+	);
 
-	unsigned int frame_ds;
-	glGenTextures(1, &frame_ds);
-	glBindTexture(GL_TEXTURE_2D, frame_ds);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, screen_x, screen_y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, (void*)0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // how does low resolution shadow map look if we use linear instead of nearest
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
+	Texture frame_depth_t = Texture(
+		std::string("depth"),
+		screen_x,
+		screen_y,
+		(void*)0,
+		GL_UNSIGNED_INT_24_8,
+		GL_DEPTH24_STENCIL8,
+		GL_DEPTH_STENCIL,
+		Texture_Filter::nearest,
+		Texture_Wrap::clamp
+	);
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, main_buffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_color, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, frame_ds, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_color_t.get_id(), 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, frame_depth_t.get_id(), 0);
 
 
 	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -316,8 +322,8 @@ int main()
 	Program post_program{ post_shaders };
 
 	post_program.use();
-	post_program.set1i("frame", 2);
-	post_program.set1i("depth", 3);
+	frame_color_t.set_texture_unit(post_program, 2);
+	frame_depth_t.set_texture_unit(post_program, 3);
 
 	lf_texture.set_texture_unit(post_program, 4);
 	hf_texture.set_texture_unit(post_program, 5);
@@ -352,6 +358,11 @@ int main()
 		depth_program.set_mat4f("model", ground_model);
 		ground_plane.draw(depth_program);
 		
+		if (resize) {
+			std::cout << "RESIZE:"  << screen_x << "," << screen_y << std::endl;
+			frame_color_t.resize(screen_x, screen_y);
+			frame_depth_t.resize(screen_x, screen_y);
+		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, main_buffer);
 		glViewport(0, 0, screen_x, screen_y);
@@ -364,6 +375,11 @@ int main()
 		program.set1f("time", glfwGetTime());
 
 		glPolygonOffset(0.0f, 0.0f);
+
+		if (resize) {
+			projection = glm::perspective(fov_y, ((float)screen_x) / screen_y, near_plane, far_plane);
+			program.set_mat4f("projection", projection);
+		}
 
 		view = camera.generate_view_mat();
 		program.set_mat4f("view", view);
@@ -400,11 +416,8 @@ int main()
 		post_program.set_mat4f("view", view);
 		post_program.set_vec3f("w_pos", camera_pos);
 
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, frame_color);
-
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, frame_ds);
+		frame_color_t.bind();
+		frame_depth_t.bind();
 
 		// interactive:
 		{
@@ -471,6 +484,8 @@ int main()
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+		resize = false;
+
 		// buffer
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -493,6 +508,7 @@ void glfw_error_callback(int error, const char* description)
 
 void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
+	resize = true;
 	screen_x = width;
 	screen_y = height;
 }
@@ -511,7 +527,7 @@ void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 
 	glm::vec3 dir = camera.get_dir();
 
-	// not efficient, could comp	ute once and update
+	// not efficient, could compute once and update
 	double yaw   = atan2(dir.z, dir.x);
 	double pitch = asin(dir.y);
 
