@@ -26,6 +26,7 @@ uniform sampler2D depth;
 uniform vec3 w_pos;
 
 uniform mat4 view;
+const float PI  = 3.14159265358979323846264;
 
 struct Sphere {
 	vec3 p;
@@ -49,7 +50,7 @@ struct Ray {
 vec3 light_pos = vec3(0.0, 20.0, 20.0);
 uniform vec3 light_color;
 uniform float light_strength;
-uniform vec3 light_albedo;
+uniform vec3 light_albedo; // ambient
 
 struct Volume {
 	float absorption;
@@ -59,8 +60,6 @@ Volume volume = {0.1, 0.1};
 uniform int nr_steps;
 
 uniform float jitter_str = 0.9; // range [0,1]
-
-uniform float base_cloud_translation;
 
 uniform sampler3D worley_n;
 uniform sampler2D weather_map;
@@ -73,8 +72,8 @@ uniform float weather_scale;
 uniform float global_density;
 uniform float global_coverage;
 
-uniform int only_worley_perlin;
-uniform int only_low_freq;
+uniform float phase_eccentricity;
+uniform int use_phase_function;
 
 uniform int worley_channel;
 uniform vec3 worley_offset;
@@ -115,17 +114,10 @@ float low_freq(vec3 p) {
 
 	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
 	float low_freq_fbm = dot(low_freq_noise.gba, fbm_weights);
-	if (only_worley_perlin == 1) {
-		low_freq_fbm = 0.0;
-	}
-	return clamp(remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0) + base_cloud_translation, 0, 1);
+	return clamp(remap(low_freq_noise.r, low_freq_fbm-1, 1.0, 0.0, 1.0), 0, 1);
 }
 
 float high_freq(vec3 p) {
-	if (only_low_freq == 1) {
-		return 0;
-	}
-
 	vec3 high_freq_noise = texture(high_freq_n,high_freq_scale*p + worley_offset).rgb;
 
 	vec3 fbm_weights = vec3(0.625, 0.25, 0.125);
@@ -154,8 +146,8 @@ float sample_density(vec3 p) {
 	return base_cloud * global_density;
 }
 
-float light_transmission(vec3 origin, vec3 dest) {
-	Ray n = {origin, normalize(dest-origin)};
+float light_transmission(vec3 origin, vec3 dir) {
+	Ray n = {origin, dir};
 
 	float t0;
 	float t1;
@@ -182,6 +174,10 @@ float light_transmission(vec3 origin, vec3 dest) {
 	return trans;
 }
 
+float henyey_greenstein_phase(float theta, float g) {
+	return 0.25*PI*(1-g*g) / pow(1 + g*g - 2*g*theta, 1.5);
+}
+
 vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
@@ -203,8 +199,14 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		
 		if (density > 0) {
 			// compute in scattering from light source
-			float l_transmission = light_transmission(r.o + r.d*t, light_pos);
-			result += transmission * (l_transmission * light_color * light_strength + light_albedo) * volume.scattering * step_size * density;
+			vec3 light_dir = normalize(light_pos - (r.o + r.d*t));
+
+			float cos_theta = dot(r.d, light_dir);
+			float phase = (use_phase_function==1) ? henyey_greenstein_phase(cos_theta, phase_eccentricity) : 0.25*PI;
+			
+
+			float l_transmission = light_transmission(r.o + r.d*t, light_dir);
+			result += transmission * (l_transmission * light_color * light_strength + light_albedo) * phase * volume.scattering * step_size * density;
 		}
 
 		t += step_size;
@@ -335,7 +337,6 @@ float remap(float t, float old_min, float old_max, float new_min, float new_max)
 }
 
 
-float PI  = 3.14159265358979323846264;
 float PHI = 1.61803398874989484820459; 
 float gold_noise(in vec2 xy, in float seed){
 	// from 

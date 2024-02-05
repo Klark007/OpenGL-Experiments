@@ -302,14 +302,13 @@ int main()
 	float cloud_global_coverage = 1.0;
 	float cloud_global_density = 4.5;
 
-	float cloud_lf_scale = 0.1;
-	float cloud_hf_scale = 0.25;
-	float weather_scale = 0.06;
+	float cloud_lf_scale = 0.091;
+	float cloud_hf_scale = 0.141;
+	float weather_scale = 0.014;
 
-	float base_cloud_translation = 0.0;
+	float phase_eccentricity_g = 0.2;
 
-	int cloud_only_worley_perlin = 0;
-	int cloud_only_low_frequency = 0;
+	int cloud_use_phase_function = 1;
 
 	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
@@ -452,9 +451,8 @@ int main()
 			post_program.set1f("high_freq_scale", cloud_hf_scale);
 			post_program.set1f("weather_scale", weather_scale);
 
-			post_program.set1f("base_cloud_translation", base_cloud_translation);
-			post_program.set1i("only_worley_perlin", cloud_only_worley_perlin);
-			post_program.set1i("only_low_freq", cloud_only_low_frequency);
+			post_program.set1i("use_phase_function", cloud_use_phase_function);
+			post_program.set1f("phase_eccentricity", phase_eccentricity_g);
 
 			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
@@ -485,11 +483,10 @@ int main()
 			ImGui::SliderFloat("Low freq scale", &cloud_lf_scale, 0.0f, 1.0f);
 			ImGui::SliderFloat("High freq scale", &cloud_hf_scale, 0.0f, 1.0f);
 			ImGui::SliderFloat("Weather scale", &weather_scale, 0.0f, 1.0f);
-
-			ImGui::SliderFloat("Base cloud translation", &base_cloud_translation, -1.0f, 1.0f);
 			
-			//ImGui::Checkbox("Only use Perlin-Worley", (bool*)&cloud_only_worley_perlin);
-			ImGui::Checkbox("Only use low frequency noise", (bool*)&cloud_only_low_frequency);
+			ImGui::Checkbox("Phase function", (bool*)&cloud_use_phase_function);
+			ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
+
 
 			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
