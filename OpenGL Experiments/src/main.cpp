@@ -529,12 +529,16 @@ void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	if (!can_move)
-		return;
-
 	const double strength = 0.001;
 	static double xlast = screen_x / 2;
 	static double ylast = screen_y / 2;
+
+	if (!can_move) {
+		xlast = xpos;
+		ylast = ypos;
+		return;
+	}
+
 	
 	double dx = xpos - xlast;
 	double dy = ypos - ylast;

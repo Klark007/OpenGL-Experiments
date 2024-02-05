@@ -170,7 +170,6 @@ float light_transmission(vec3 origin, vec3 dir) {
 		}
 		trans = exp(-tau * step_size * (volume.absorption+volume.scattering));
 	}
-	//return exp(-t1 * (volume.absorption+volume.scattering));
 	return trans;
 }
 
