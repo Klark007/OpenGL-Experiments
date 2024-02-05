@@ -3,14 +3,20 @@
 Program::Program()
 {
 	program = glCreateProgram();
+	
+	shaders  = std::unordered_set<std::shared_ptr<Shader>>();
+	uniforms = std::unordered_map<std::string, Uniform>();
 }
 
 Program::Program(std::vector<std::shared_ptr<Shader>>& shaders)
 {
 	program = glCreateProgram();
 
+	this->shaders	 = std::unordered_set<std::shared_ptr<Shader>>();
+	uniforms			 = std::unordered_map<std::string, Uniform>();
+
 	for (std::shared_ptr<Shader> s : shaders) {
-		attach_shader(s->get_id());
+		attach_shader(s);
 	}
 
 	link_program();
@@ -22,14 +28,10 @@ Program::~Program()
 	glDeleteProgram(program);
 }
 
-void Program::attach_shader(unsigned int id)
+void Program::attach_shader(std::shared_ptr<Shader> shader)
 {
-	glAttachShader(program, id);
-}
-
-void Program::attach_shader(Shader& shader)
-{
-	glAttachShader(program, shader.get_id());
+	shaders.insert(shader);
+	glAttachShader(program, shader->get_id());
 }
 
 void Program::link_program()
@@ -39,6 +41,12 @@ void Program::link_program()
 
 void Program::recompile()
 {
+	for (const std::shared_ptr<Shader>& shader : shaders) {
+		if (shader->recompile() == -1) {
+			return;
+		}
+	}
+
 	link_program();
 	print_link_error();
 

@@ -9,7 +9,9 @@
 #include <vector>
 #include <memory>
 #include <string>
+
 #include <unordered_map>
+#include <unordered_set>
 
 #define LOG_LENGTH 512
 
@@ -22,8 +24,7 @@ public:
 	Program(std::vector<std::shared_ptr<Shader>>& shaders);
 	~Program();
 
-	void attach_shader(unsigned int id);
-	void attach_shader(Shader& shader);
+	void attach_shader(std::shared_ptr<Shader> shader);
 	void link_program();
 
 	// record current values of uniform using map
@@ -34,6 +35,7 @@ private:
 	unsigned int program;
 	char log[LOG_LENGTH];
 
+	std::unordered_set<std::shared_ptr<Shader>> shaders;
 	std::unordered_map<std::string, Uniform> uniforms;
 
 	inline int get_location(const std::string& name) { return glGetUniformLocation(program, name.c_str()); }

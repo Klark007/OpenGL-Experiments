@@ -19,7 +19,7 @@ public:
 
 	void  add_source_from_file();
 	void compile();
-	void recompile();
+	int recompile();
 
 private:
 	unsigned int shader;
@@ -28,7 +28,7 @@ private:
 
 public:
 	void get(unsigned int name, int* params);
-	void print_compile_error();
+	int print_compile_error();
 	inline unsigned int get_id() { return shader; };
 };
 

@@ -350,17 +350,11 @@ int main()
 		if (recompile_shaders && glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE) {
 			std::cout << "Recompile" << std::endl;
 
-			for (std::shared_ptr<Shader>& shader : phong_shaders) {
-				shader->recompile();
-			}
-			program.recompile();
-			for (std::shared_ptr<Shader>& shader : depth_shaders) {
-				shader->recompile();
-			}
-			depth_program.recompile();
+			/*
 			for (std::shared_ptr<Shader>& shader : post_shaders) {
 				shader->recompile();
 			}
+			*/
 			post_program.recompile();
 
 			recompile_shaders = false;

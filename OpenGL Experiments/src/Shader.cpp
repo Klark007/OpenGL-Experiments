@@ -43,11 +43,11 @@ void Shader::compile()
 	glCompileShader(shader);
 }
 
-void Shader::recompile()
+int Shader::recompile()
 {
 	add_source_from_file();
 	compile();
-	print_compile_error();
+	return print_compile_error();
 }
 
 void Shader::get(unsigned int name, int* params)
@@ -55,12 +55,14 @@ void Shader::get(unsigned int name, int* params)
 	glGetShaderiv(shader, name, params);
 }
 
-void Shader::print_compile_error()
+int Shader::print_compile_error()
 {
 	int status;
 	get(GL_COMPILE_STATUS, &status);
 	if (status != GL_TRUE) {
 		glGetShaderInfoLog(shader, LOG_LENGTH, NULL, log);
 		std::cerr << "SHADER COMPILATION FAILED:" << log << std::endl;
+		return -1;
 	}
+	return 0;
 }
