@@ -40,7 +40,7 @@ struct Ray {
 	vec3 d;
 };
 
-vec3 light_dir = vec3(0,1,0);
+uniform vec3 light_dir;
 uniform vec3 light_color;
 uniform float light_strength;
 uniform vec3 light_albedo; // ambient
@@ -194,7 +194,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 			// compute in scattering from light source
 			vec3 dir_to_light = -normalize(light_dir);//normalize(light_pos - (r.o + r.d*t));
 
-			float cos_theta = dot(r.d, light_dir);
+			float cos_theta = dot(r.d, dir_to_light);
 			float phase = (use_phase_function==1) ? henyey_greenstein_phase(cos_theta, phase_eccentricity) : 0.25*PI;
 			
 

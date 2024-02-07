@@ -298,6 +298,7 @@ int main()
 	);
 
 	// light dir
+	glm::vec3 sun_dir = glm::vec3(0,1,0);
 	glm::vec3 cloud_color = glm::vec3(1);
 	float cloud_light_strength = 3.3;
 	glm::vec3 cloud_ambient = glm::vec3(0.5);
@@ -443,6 +444,7 @@ int main()
 			post_program.set1i("worley_channel", worley_channel);
 			post_program.set_vec3f("worley_offset", worley_offset);
 			
+			post_program.set_vec3f("light_dir", sun_dir);
 			post_program.set_vec3f("light_color", cloud_color);
 			post_program.set_vec3f("light_albedo", cloud_ambient);
 			post_program.set1f("light_strength", cloud_light_strength);
@@ -478,6 +480,7 @@ int main()
 
 		{
 			ImGui::Begin("Edit settings (Clouds)");
+			ImGui::SliderFloat3("Sun Direction", (float*)&sun_dir, -1, 1);
 			ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
 			ImGui::SliderFloat("Light strength", &cloud_light_strength, 0.0f, 10.0f);
 			ImGui::ColorEdit3("Cloud ambient", (float*)&cloud_ambient);
@@ -491,8 +494,6 @@ int main()
 			
 			ImGui::Checkbox("Phase function", (bool*)&cloud_use_phase_function);
 			ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
-			ImGui::SliderFloat3("TEST", nullptr, 0,1);
-
 
 			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
