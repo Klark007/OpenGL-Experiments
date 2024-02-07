@@ -142,7 +142,7 @@ int main()
 
 	constexpr float fov_y = glm::radians(45.0f);
 	constexpr float near_plane = 0.1f;
-	constexpr float far_plane = 100.0f;
+	constexpr float far_plane = 500.0f;
 	projection = glm::perspective(fov_y, ((float) screen_x) / screen_y, near_plane, far_plane);
 
 	program.use();

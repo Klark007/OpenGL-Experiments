@@ -37,7 +37,7 @@ Sphere sphere = {vec3(0.0, 11.5, -15.0), 10};
 struct AABB {
 	vec2 min_max[3];
 };
-AABB cloud_bounding_box = {vec2[](vec2(-30, 30), vec2(9.5, 14), vec2(-30, 30))};
+AABB cloud_bounding_box = {vec2[](vec2(-100, 100), vec2(9.5, 14), vec2(-100, 100))};
 
 vec2 cloud_min_max_height = vec2(10.0,13.5);
 
@@ -57,8 +57,9 @@ struct Volume {
 	float scattering; 
 };
 Volume volume = {0.1, 0.1};
-uniform int nr_steps;
 
+uniform int nr_steps;
+float dist_incr_step_size = 1.0/500;
 uniform float jitter_str = 0.9; // range [0,1]
 
 uniform sampler3D worley_n;
@@ -180,7 +181,7 @@ float henyey_greenstein_phase(float theta, float g) {
 vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
-	float step_size = (t1-t0) / nr_steps;
+	float step_size = (t1-t0) / nr_steps + t0*dist_incr_step_size; // 0 to 1/500 
 
 	vec3 result = vec3(0.0);
 	// this introduces noise but removes Banding
@@ -208,8 +209,15 @@ vec3 raymarching(Ray r, float t0, float t1) {
 			result += transmission * (l_transmission * light_color * light_strength + light_albedo) * phase * volume.scattering * step_size * density;
 		}
 
+		// early termination
+		if (transmission < 1e-5) {
+			//return vec3(1,0,0)*c/nr_steps;
+			break;
+		}
+
 		t += step_size;
 	}
+	//return vec3(t0/4000);
 	
 	result += texture(frame, tex_coord).rgb * transmission;
 	return result;
