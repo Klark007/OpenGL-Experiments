@@ -28,26 +28,19 @@ uniform vec3 w_pos;
 uniform mat4 view;
 const float PI  = 3.14159265358979323846264;
 
-struct Sphere {
-	vec3 p;
-	float r;
-};
-Sphere sphere = {vec3(0.0, 11.5, -15.0), 10};
-
 struct AABB {
 	vec2 min_max[3];
 };
-AABB cloud_bounding_box = {vec2[](vec2(-100, 100), vec2(9.5, 14), vec2(-100, 100))};
+uniform AABB cloud_bounding_box = {vec2[](vec2(-50, 50), vec2(20, 25), vec2(-50, 50))};
 
-vec2 cloud_min_max_height = vec2(10.0,13.5);
+uniform vec2 cloud_min_max_height;
 
 struct Ray {
 	vec3 o;
 	vec3 d;
 };
 
-// sun light not small point lights
-vec3 light_pos = vec3(0.0, 20.0, 20.0);
+vec3 light_dir = vec3(0,1,0);
 uniform vec3 light_color;
 uniform float light_strength;
 uniform vec3 light_albedo; // ambient
@@ -80,7 +73,6 @@ uniform int use_phase_function;
 uniform int worley_channel;
 uniform vec3 worley_offset;
 
-bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1);
 bool intersect_aabb(AABB box, Ray r, out float t0, out float t1);
 float linear_depth();
 float gold_noise(in vec2 xy, in float seed);
@@ -200,7 +192,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		
 		if (density > 0) {
 			// compute in scattering from light source
-			vec3 light_dir = normalize(light_pos - (r.o + r.d*t));
+			vec3 dir_to_light = -normalize(light_dir);//normalize(light_pos - (r.o + r.d*t));
 
 			float cos_theta = dot(r.d, light_dir);
 			float phase = (use_phase_function==1) ? henyey_greenstein_phase(cos_theta, phase_eccentricity) : 0.25*PI;
@@ -294,32 +286,7 @@ float linear_depth() {
 	return z_e;
 }
 
-// returns true if hits sphere and records parameters of first and second hit in t0, t1
-bool intersect_sphere(Sphere s, Ray r, out float t0, out float t1) {
-	float a = dot(r.d, r.d);
-
-	if (abs(a) < 1e-5) {
-		return false;
-	}
-
-	float b = 2*(dot(r.o,r.d) - dot(r.d,s.p));
-	float c = dot(r.o-s.p, r.o-s.p) - s.r*s.r;
-
-	float d = b*b - 4*a*c;
-
-	if (d < 0) {
-		return false;
-	}
-
-	float x_0 = (-b + sqrt(d)) / (2*a);
-	float x_1 = (-b - sqrt(d)) / (2*a);
-
-	t0 = min(x_0, x_1);
-	t1 = max(x_0, x_1);
-
-	return true;
-}
-
+// returns true if hits box and records parameters of first and second hit in t0, t1
 bool intersect_aabb(AABB box, Ray r, out float t0, out float t1) {
 	vec3 rec_dir = 1.0 / r.d;
 

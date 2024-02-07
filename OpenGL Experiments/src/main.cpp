@@ -297,12 +297,13 @@ int main()
 		Texture_Wrap::repeat
 	);
 
+	// light dir
 	glm::vec3 cloud_color = glm::vec3(1);
-	float cloud_light_strength = 4.5;
+	float cloud_light_strength = 3.3;
 	glm::vec3 cloud_ambient = glm::vec3(0.5);
 
 	float cloud_global_coverage = 1.0;
-	float cloud_global_density = 4.5;
+	float cloud_global_density = 25.0;
 
 	float cloud_lf_scale = 0.059;
 	float cloud_hf_scale = 0.141;
@@ -315,8 +316,8 @@ int main()
 	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
 
-	// to add
-	// height
+	float cloud_height_min = 20.0;
+	float cloud_height_max = 25.0;
 
 	std::vector<std::shared_ptr<Shader>> post_shaders;
 	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
@@ -459,6 +460,8 @@ int main()
 			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
 
+			post_program.set_vec2f("cloud_bounding_box.min_max[1]", cloud_height_min, cloud_height_max);
+			post_program.set_vec2f("cloud_min_max_height", cloud_height_min, cloud_height_max);
 		}
 
 		lf_texture.bind();
@@ -489,9 +492,12 @@ int main()
 			ImGui::Checkbox("Phase function", (bool*)&cloud_use_phase_function);
 			ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
 
-
 			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
+			ImGui::SliderFloat("Cloud Min Height", &cloud_height_min, 0.0f, 100.0f);
+			ImGui::SliderFloat("Cloud Max Height", &cloud_height_max, 0.0f, 100.0f);
+
+
 
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 			ImGui::End();
