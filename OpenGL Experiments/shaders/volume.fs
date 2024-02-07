@@ -60,6 +60,7 @@ Volume volume = {0.1, 0.1};
 
 uniform int nr_steps;
 float dist_incr_step_size = 1.0/500;
+float early_termination = 1e-2;
 uniform float jitter_str = 0.9; // range [0,1]
 
 uniform sampler3D worley_n;
@@ -210,7 +211,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		}
 
 		// early termination
-		if (transmission < 1e-5) {
+		if (transmission < early_termination) {
 			//return vec3(1,0,0)*c/nr_steps;
 			break;
 		}
