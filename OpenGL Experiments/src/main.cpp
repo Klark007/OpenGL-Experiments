@@ -268,7 +268,9 @@ int main()
 	);
 
 	unsigned int high_freq_res = 32;
-	PerlinWorley3D<float> w2(high_freq_res, high_freq_res, high_freq_res, 2, 2, 2, { {6,6,6}, {8,8,8}, {12,12,12}, {1,1,1} });
+	PerlinWorley3D<float> w2(high_freq_res, high_freq_res, high_freq_res, 2, 2, 2, { {1,1,1}, {12,12,12}, {16,16,16}, {6,6,6} });
+	w2.set_channel(0,w2.get_channel(2));
+
 	Texture hf_texture = Texture(
 		std::string("high_freq_n"),
 		high_freq_res,
@@ -296,13 +298,13 @@ int main()
 	);
 
 	glm::vec3 cloud_color = glm::vec3(1);
-	float cloud_light_strength = 1.8;
-	glm::vec3 cloud_ambient = glm::vec3(0);
+	float cloud_light_strength = 4.5;
+	glm::vec3 cloud_ambient = glm::vec3(0.5);
 
 	float cloud_global_coverage = 1.0;
 	float cloud_global_density = 4.5;
 
-	float cloud_lf_scale = 0.091;
+	float cloud_lf_scale = 0.059;
 	float cloud_hf_scale = 0.141;
 	float weather_scale = 0.014;
 
@@ -478,7 +480,7 @@ int main()
 			ImGui::ColorEdit3("Cloud ambient", (float*)&cloud_ambient);
 
 			ImGui::SliderFloat("Global coverage", &cloud_global_coverage, 0.0f, 1.0f);
-			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 25.0f);
+			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 50.0f);
 
 			ImGui::SliderFloat("Low freq scale", &cloud_lf_scale, 0.0f, 1.0f);
 			ImGui::SliderFloat("High freq scale", &cloud_hf_scale, 0.0f, 1.0f);

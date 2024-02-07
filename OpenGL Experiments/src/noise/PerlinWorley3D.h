@@ -3,7 +3,7 @@
 #include "Perlin3DFBM.h"
 #include "Worley-Noise/Worley Noise/Worley3DFBM.h"
 
-#define NR_OCT 3
+#define NR_OCT 4
 
 template<class T>
 class PerlinWorley3D : public Noise<T> {
@@ -19,7 +19,7 @@ private:
 
 template<class T>
 inline PerlinWorley3D<T>::PerlinWorley3D(uint res_x, uint res_y, uint res_z, uint scale_x, uint scale_y, uint scale_z, std::vector<std::tuple<uint, uint, uint>> grid_res)
-  : Noise<T>(res_x, res_y, res_z, WORLEY_NR_CHANNELS), w {Worley3DFBM<T>(res_x,res_y,res_z, grid_res,NR_OCT)}, p {Perlin3DFBM<T>(res_x,res_y,res_z,scale_x,scale_y,scale_z,NR_OCT)}
+  : Noise<T>(res_x, res_y, res_z, WORLEY_NR_CHANNELS), w {Worley3DFBM<T>(res_x,res_y,res_z, grid_res,NR_OCT-1)}, p {Perlin3DFBM<T>(res_x,res_y,res_z,scale_x,scale_y,scale_z,NR_OCT)}
 {
   gen_img();
 }
@@ -34,6 +34,10 @@ void PerlinWorley3D<T>::gen_img() {
   w.clamp(0,w.max());
   w.normalize();
 
+  p.add(-0.2);
+  p.clamp(0,p.max());
+  p.normalize();
+
   this->img_data = w.get_vec();
 
   std::vector<T> perlin_data = p.get_vec();
@@ -45,7 +49,7 @@ void PerlinWorley3D<T>::gen_img() {
         T perlin_value = perlin_data.at(p.idx(x, y, z, c));
         T worley_value = this->img_data.at(w.idx(x, y, z, c));
 
-        this->img_data.at(w.idx(x,y,z,c)) = PerlinWorley3D<T>::combine(perlin_value, worley_value, 0.2);
+        this->img_data.at(w.idx(x,y,z,c)) = PerlinWorley3D<T>::combine(perlin_value, worley_value, 0.15);
       }
     }
   }

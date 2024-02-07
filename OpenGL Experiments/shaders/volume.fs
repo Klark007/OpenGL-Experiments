@@ -217,7 +217,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 
 void main()
 {
-	vec4 s = texture(high_freq_n, vec3(tex_coord, 0)+worley_offset);
+	vec4 s = texture(worley_n, vec3(tex_coord, 0)+worley_offset);//texture(worley_n, vec3(tex_coord, 0)+worley_offset);
 	/*
 	if (worley_channel == 0) {
 		FragColor = vec4(s.rrr,1);
