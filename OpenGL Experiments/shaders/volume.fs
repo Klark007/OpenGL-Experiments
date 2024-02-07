@@ -140,7 +140,7 @@ float sample_density(vec3 p) {
 	return base_cloud * global_density;
 }
 
-float light_transmission(vec3 origin, vec3 dir) {
+float light_transmission(vec3 origin, vec3 dir, float d) {
 	Ray n = {origin, dir};
 
 	float t0;
@@ -148,7 +148,7 @@ float light_transmission(vec3 origin, vec3 dir) {
 
 	float trans = 1.0;
 	if (intersect_aabb(cloud_bounding_box, n, t0, t1) && t1 >= 0) {
-		float step_size = (t1-t0) / nr_steps * 2;
+		float step_size = ((t1-t0) / nr_steps) * 2 + d*dist_incr_step_size/6;
 
 		// increase step size for light transmission calculations
 		float tau = 0.0;
@@ -198,7 +198,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 			float phase = (use_phase_function==1) ? henyey_greenstein_phase(cos_theta, phase_eccentricity) : 0.25*PI;
 			
 
-			float l_transmission = light_transmission(r.o + r.d*t, light_dir);
+			float l_transmission = light_transmission(r.o + r.d*t, light_dir, t0);
 			result += transmission * (l_transmission * light_color * light_strength + light_albedo) * phase * volume.scattering * step_size * density;
 		}
 

@@ -491,6 +491,8 @@ int main()
 			
 			ImGui::Checkbox("Phase function", (bool*)&cloud_use_phase_function);
 			ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
+			ImGui::SliderFloat3("TEST", nullptr, 0,1);
+
 
 			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
