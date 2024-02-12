@@ -79,42 +79,42 @@ void Program::print_link_error()
 
 void Program::set1i(const std::string& name, int value)
 {
-	uniforms.insert_or_assign(name, Uniform(value));
+	update_uniform(name, Uniform(value));
 	glUniform1i(get_location(name), value);
 }
 
 void Program::set1f(const std::string& name, float value)
 {
-	uniforms.insert_or_assign(name, Uniform(value));
+	update_uniform(name, Uniform(value));
 	glUniform1f(get_location(name), value);
 }
 
 void Program::set_vec2f(const std::string& name, const glm::vec2& value)
 {
-	uniforms.insert_or_assign(name, Uniform(value));
+	update_uniform(name, Uniform(value));
 	glUniform2fv(get_location(name), 1, glm::value_ptr(value));
 }
 
 void Program::set_vec2f(const std::string& name, float x, float y)
 {
-	uniforms.insert_or_assign(name, Uniform(glm::vec2(x,y)));
+	update_uniform(name, Uniform(glm::vec2(x,y)));
 	glUniform2f(get_location(name), x, y);
 }
 
 void Program::set_vec3f(const std::string& name, const glm::vec3& value)
 {
-	uniforms.insert_or_assign(name, Uniform(value));
+	update_uniform(name, Uniform(value));
 	glUniform3fv(get_location(name), 1, glm::value_ptr(value));
 }
 
 void Program::set_vec3f(const std::string& name, float r, float g, float b)
 {
-	uniforms.insert_or_assign(name, Uniform(glm::vec3(r,g,b)));
+	update_uniform(name, Uniform(glm::vec3(r,g,b)));
 	glUniform3f(get_location(name), r, g, b);
 }
 
 void Program::set_mat4f(const std::string& name, const glm::mat4& value)
 {
-	uniforms.insert_or_assign(name, Uniform(value));
+	update_uniform(name, Uniform(value));
 	glUniformMatrix4fv(get_location(name), 1, GL_FALSE, glm::value_ptr(value));
 }

@@ -14,6 +14,7 @@
 #include <unordered_set>
 
 #define LOG_LENGTH 512
+#define UPDATE_UNIFORM_IF_CHANGED false
 
 struct Uniform;
 
@@ -39,6 +40,7 @@ private:
 	std::unordered_map<std::string, Uniform> uniforms;
 
 	inline int get_location(const std::string& name) { return glGetUniformLocation(program, name.c_str()); }
+	inline void update_uniform(const std::string& name, Uniform u);
 public:
 	void get(unsigned int name, int* params);
 	void print_link_error();
@@ -72,32 +74,45 @@ struct Uniform {
 		glm::vec2 v2;
 		glm::vec3 v3;
 		glm::mat4 m4;
-	};
+	} u;
 
-	explicit Uniform(int x) { tag = INT; i = x; };
-	explicit Uniform(float x) {tag = FLOAT; f = x; };
-	Uniform(const glm::vec2& x) { tag = VEC2; v2 = x; };
-	Uniform(const glm::vec3& x) { tag = VEC3; v3 = x; };
-	Uniform(const glm::mat4& x) { tag = MAT4; m4 = x; };
+	explicit Uniform(int x) { tag = INT; u.i = x; };
+	explicit Uniform(float x) {tag = FLOAT; u.f = x; };
+	Uniform(const glm::vec2& x) { tag = VEC2; u.v2 = x; };
+	Uniform(const glm::vec3& x) { tag = VEC3; u.v3 = x; };
+	Uniform(const glm::mat4& x) { tag = MAT4; u.m4 = x; };
+
+	friend bool operator== (const Uniform& a, const Uniform& b) { return a.tag == b.tag && a.u.i == b.u.i; }
+	friend bool operator!= (const Uniform& a, const Uniform& b) { return !(a == b); }
 
 	inline void set(Program& p, const std::string& name) const {
 		switch (tag)
 		{
 		case Uniform::INT:
-			p.set1i(name, i);
+			p.set1i(name, u.i);
 			break;
 		case Uniform::FLOAT:
-			p.set1f(name, f);
+			p.set1f(name, u.f);
 			break;
 		case Uniform::VEC2:
-			p.set_vec2f(name, v2);
+			p.set_vec2f(name, u.v2);
 			break;
 		case Uniform::VEC3:
-			p.set_vec3f(name, v3);
+			p.set_vec3f(name, u.v3);
 			break;
 		case Uniform::MAT4:
-			p.set_mat4f(name, m4);
+			p.set_mat4f(name, u.m4);
 			break;
 		}
 	}
 };
+
+inline void Program::update_uniform(const std::string& name, Uniform u)
+{
+#if UPDATE_UNIFORM_IF_CHANGED
+	if (uniforms.find(name) != uniforms.end() && uniforms.at(name) == u) {
+		return;
+	}
+#endif
+	uniforms.insert_or_assign(name, u);
+}
