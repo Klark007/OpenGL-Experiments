@@ -52,9 +52,12 @@ struct Volume {
 Volume volume = {0.1, 0.1};
 
 uniform int nr_steps;
-float dist_incr_step_size = 1.0/500;
-float early_termination = 1e-2;
-uniform float jitter_str = 0.9; // range [0,1]
+
+uniform int do_distance_step_size;
+uniform float dist_incr_step_size;
+uniform int do_early_termination;
+uniform float early_termination;
+uniform float jitter_str; // range [0,1]
 
 // adaptive stepsize
 uniform bool adaptive_stepsize;
@@ -153,7 +156,8 @@ float light_transmission(vec3 origin, vec3 dir, float d) {
 
 	float trans = 1.0;
 	if (intersect_aabb(cloud_bounding_box, n, t0, t1) && t1 >= 0) {
-		float step_size = ((t1-t0) / nr_steps) * 2 + d*dist_incr_step_size/6;
+		float uniform_sz = (t1-t0) / nr_steps;
+		float step_size  = (do_distance_step_size==1) ? uniform_sz + t0*dist_incr_step_size : uniform_sz; // 0 to 1/500 
 
 		// increase step size for light transmission calculations
 		float tau = 0.0;
@@ -179,7 +183,8 @@ float henyey_greenstein_phase(float theta, float g) {
 vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
-	float fine_sz  = (t1-t0) / nr_steps + t0*dist_incr_step_size; // 0 to 1/500 
+	float uniform_sz = (t1-t0) / nr_steps;
+	float fine_sz  = (do_distance_step_size==1) ? uniform_sz + t0*dist_incr_step_size : uniform_sz; // 0 to 1/500 
 	float coarse_sz = fine_sz * coarse_multiplier;
 	float step_size = fine_sz;
 
@@ -226,8 +231,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		}
 
 		// early termination
-		if (transmission < early_termination) {
-			//return vec3(1,0,0)*c/nr_steps;
+		if (transmission < early_termination && do_early_termination==1) {
 			break;
 		}
 		

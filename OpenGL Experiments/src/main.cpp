@@ -317,9 +317,16 @@ int main()
 	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
 
-	int adaptive_stepsize = 1;
+	int adaptive_stepsize = 0;
 	float coarse_stepsize_scale = 4.0;
-	int nr_misses_coarse_switch = 4;
+	int nr_misses_coarse_switch = 5;
+
+	
+	int do_incr_sz_far = 1;
+	int inv_incr_sz_far_away = 500;
+
+	int do_early_termination = 1;
+	int inv_early_termination = 100;
 
 	float cloud_height_min = 20.0;
 	float cloud_height_max = 25.0;
@@ -465,10 +472,15 @@ int main()
 
 			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
+
 			post_program.set1i("adaptive_stepsize", adaptive_stepsize);
 			post_program.set1f("coarse_multiplier", coarse_stepsize_scale);
 			post_program.set1i("nr_misses_switch", nr_misses_coarse_switch);
 
+			post_program.set1i("do_distance_step_size", do_incr_sz_far);
+			post_program.set1i("do_early_termination", do_early_termination);
+			post_program.set1f("dist_incr_step_size", 1.0 / inv_incr_sz_far_away);
+			post_program.set1f("early_termination", 1.0 / inv_early_termination);
 
 			post_program.set_vec2f("cloud_bounding_box.min_max[1]", cloud_height_min, cloud_height_max);
 			post_program.set_vec2f("cloud_min_max_height", cloud_height_min, cloud_height_max);
@@ -489,32 +501,50 @@ int main()
 		{
 			// Group into subtabs
 			ImGui::Begin("Edit settings (Clouds)");
-			ImGui::SliderFloat3("Sun Direction", (float*)&sun_dir, -1, 1);
-			ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
-			ImGui::SliderFloat("Light strength", &cloud_light_strength, 0.0f, 10.0f);
-			ImGui::ColorEdit3("Cloud ambient", (float*)&cloud_ambient);
 
-			ImGui::SliderFloat("Global coverage", &cloud_global_coverage, 0.0f, 1.0f);
-			ImGui::SliderFloat("Global density", &cloud_global_density	, 0.0f, 50.0f);
+			if (ImGui::CollapsingHeader("Lighting Settings"))
+			{
+				ImGui::SliderFloat3("Sun Direction", (float*)&sun_dir, -1, 1);
+				ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
+				ImGui::SliderFloat("Light strength", &cloud_light_strength, 0.0f, 10.0f);
+				ImGui::ColorEdit3("Cloud ambient", (float*)&cloud_ambient);
+				
+				ImGui::Checkbox("Phase function", (bool*)&cloud_use_phase_function);
+				ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
+			}
 
-			ImGui::SliderFloat("Low freq scale", &cloud_lf_scale, 0.0f, 1.0f);
-			ImGui::SliderFloat("High freq scale", &cloud_hf_scale, 0.0f, 1.0f);
-			ImGui::SliderFloat("Weather scale", &weather_scale, 0.0f, 1.0f);
+			if (ImGui::CollapsingHeader("Raymarching Settings"))
+			{
+				ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
+				ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
+			}
+
+			if (ImGui::CollapsingHeader("Density/Coverage Settings"))
+			{
+				ImGui::SliderFloat("Global coverage", &cloud_global_coverage, 0.0f, 1.0f);
+				ImGui::SliderFloat("Global density", &cloud_global_density, 0.0f, 50.0f);
+				
+				ImGui::SliderFloat("Low freq scale", &cloud_lf_scale, 0.0f, 1.0f);
+				ImGui::SliderFloat("High freq scale", &cloud_hf_scale, 0.0f, 1.0f);
+				ImGui::SliderFloat("Weather scale", &weather_scale, 0.0f, 1.0f);
+
+				ImGui::SliderFloat("Cloud Min Height", &cloud_height_min, 0.0f, 100.0f);
+				ImGui::SliderFloat("Cloud Max Height", &cloud_height_max, 0.0f, 100.0f);
+
+			}
 			
-			ImGui::Checkbox("Phase function", (bool*)&cloud_use_phase_function);
-			ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
+			if (ImGui::CollapsingHeader("Optimization Settings"))
+			{
+				ImGui::Checkbox("Adaptive Stepsize", (bool*)&adaptive_stepsize);
+				ImGui::SliderFloat("Coarse stepsize multiplier", &coarse_stepsize_scale, 1.0f, 8.0f);
+				ImGui::SliderInt("Misses until coarse switch", &nr_misses_coarse_switch, 2, 8);
+				
+				ImGui::Checkbox("Distance based increase of stepsize", (bool*)&do_incr_sz_far);
+				ImGui::SliderInt("Inv Distance increase stepsize", &inv_incr_sz_far_away, 300, 800);
 
-			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
-			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
-			
-			ImGui::Checkbox("Adaptive Stepsize", (bool*)&adaptive_stepsize);
-			ImGui::SliderFloat("Coarse stepsize multiplier", &coarse_stepsize_scale, 1.0f, 8.0f);
-			ImGui::SliderInt("Misses until coarse switch", &nr_misses_coarse_switch, 2, 8);
-			
-			ImGui::SliderFloat("Cloud Min Height", &cloud_height_min, 0.0f, 100.0f);
-			ImGui::SliderFloat("Cloud Max Height", &cloud_height_max, 0.0f, 100.0f);
-
-
+				ImGui::Checkbox("Early termination", (bool*)&do_early_termination);
+				ImGui::SliderInt("Inv Early Termination", &inv_early_termination, 50, 1000);
+			}
 
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 			ImGui::End();
