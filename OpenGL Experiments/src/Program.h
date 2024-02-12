@@ -14,7 +14,7 @@
 #include <unordered_set>
 
 #define LOG_LENGTH 512
-#define UPDATE_UNIFORM_IF_CHANGED false
+#define UPDATE_UNIFORM_IF_CHANGED true
 
 struct Uniform;
 
