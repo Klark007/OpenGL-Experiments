@@ -56,6 +56,11 @@ float dist_incr_step_size = 1.0/500;
 float early_termination = 1e-2;
 uniform float jitter_str = 0.9; // range [0,1]
 
+// adaptive stepsize
+uniform bool adaptive_stepsize;
+uniform float coarse_multiplier;
+uniform int nr_misses_switch = 4;
+
 uniform sampler3D worley_n;
 uniform sampler2D weather_map;
 uniform sampler3D high_freq_n;
@@ -174,14 +179,21 @@ float henyey_greenstein_phase(float theta, float g) {
 vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
-	float step_size = (t1-t0) / nr_steps + t0*dist_incr_step_size; // 0 to 1/500 
+	float fine_sz  = (t1-t0) / nr_steps + t0*dist_incr_step_size; // 0 to 1/500 
+	float coarse_sz = fine_sz * coarse_multiplier;
+	float step_size = fine_sz;
+
+	int nr_misses = 0;
 
 	vec3 result = vec3(0.0);
 	// this introduces noise but removes Banding
 	// impact of noise could be lessend by blur, avoiding small regions with much transmission or smaller perturbation
 	float n = (gold_noise(gl_FragCoord.xy, 0.9787)-0.5) * jitter_str + 0.5;
 	float t = t0+step_size*n;
-	for (int c = 0; c < nr_steps; c++) {
+
+	// actually could take more if we miss as often as possible and need to backtrack immediately * nr_steps
+	int steps = adaptive_stepsize ? nr_steps*2 : nr_steps;
+	for (int c = 0; c < steps; c++) {
 		if (!(t < t1)) {
 			break;
 		}
@@ -191,15 +203,26 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		transmission *= exp(-density*step_size*(volume.absorption+volume.scattering)); // absorption and out scattering
 		
 		if (density > 0) {
-			// compute in scattering from light source
-			vec3 dir_to_light = -normalize(light_dir);//normalize(light_pos - (r.o + r.d*t));
+			// were using coarse step size
+			if (nr_misses >= nr_misses_switch && adaptive_stepsize) {
+				// backtrack
+				transmission /= exp(-density*step_size*(volume.absorption+volume.scattering));
+				t -= step_size;
+				step_size = fine_sz;
+			} else {
+				// compute in scattering from light source
+				vec3 dir_to_light = -normalize(light_dir);//normalize(light_pos - (r.o + r.d*t));
 
-			float cos_theta = dot(r.d, dir_to_light);
-			float phase = (use_phase_function==1) ? henyey_greenstein_phase(cos_theta, phase_eccentricity) : 0.25*PI;
+				float cos_theta = dot(r.d, dir_to_light);
+				float phase = (use_phase_function==1) ? henyey_greenstein_phase(cos_theta, phase_eccentricity) : 0.25*PI;
 			
+				float l_transmission = light_transmission(r.o + r.d*t, light_dir, t0);
+				result += transmission * (l_transmission * light_color * light_strength + light_albedo) * phase * volume.scattering * step_size * density;
+			}
 
-			float l_transmission = light_transmission(r.o + r.d*t, light_dir, t0);
-			result += transmission * (l_transmission * light_color * light_strength + light_albedo) * phase * volume.scattering * step_size * density;
+			nr_misses = 0;
+		} else {
+			nr_misses += 1;
 		}
 
 		// early termination
@@ -207,7 +230,8 @@ vec3 raymarching(Ray r, float t0, float t1) {
 			//return vec3(1,0,0)*c/nr_steps;
 			break;
 		}
-
+		
+		step_size = (nr_misses >= nr_misses_switch) && adaptive_stepsize ? coarse_sz : fine_sz;
 		t += step_size;
 	}
 	//return vec3(t0/4000);

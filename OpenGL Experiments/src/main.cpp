@@ -307,7 +307,7 @@ int main()
 	float cloud_global_density = 25.0;
 
 	float cloud_lf_scale = 0.059;
-	float cloud_hf_scale = 0.141;
+	float cloud_hf_scale = 0.082;
 	float weather_scale = 0.014;
 
 	float phase_eccentricity_g = 0.2;
@@ -316,6 +316,10 @@ int main()
 
 	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
+
+	int adaptive_stepsize = 1;
+	float coarse_stepsize_scale = 4.0;
+	int nr_misses_coarse_switch = 4;
 
 	float cloud_height_min = 20.0;
 	float cloud_height_max = 25.0;
@@ -461,6 +465,10 @@ int main()
 
 			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
+			post_program.set1i("adaptive_stepsize", adaptive_stepsize);
+			post_program.set1f("coarse_multiplier", coarse_stepsize_scale);
+			post_program.set1i("nr_misses_switch", nr_misses_coarse_switch);
+
 
 			post_program.set_vec2f("cloud_bounding_box.min_max[1]", cloud_height_min, cloud_height_max);
 			post_program.set_vec2f("cloud_min_max_height", cloud_height_min, cloud_height_max);
@@ -479,6 +487,7 @@ int main()
 		ImGui::NewFrame();
 
 		{
+			// Group into subtabs
 			ImGui::Begin("Edit settings (Clouds)");
 			ImGui::SliderFloat3("Sun Direction", (float*)&sun_dir, -1, 1);
 			ImGui::ColorEdit3("Cloud color", (float*)&cloud_color);
@@ -497,6 +506,11 @@ int main()
 
 			ImGui::SliderInt("Number of raymarch steps", &raymarch_steps, 4, 128);
 			ImGui::SliderFloat("Cloud Jitter", &cloud_jitter, 0.0f, 1.0f);
+			
+			ImGui::Checkbox("Adaptive Stepsize", (bool*)&adaptive_stepsize);
+			ImGui::SliderFloat("Coarse stepsize multiplier", &coarse_stepsize_scale, 1.0f, 8.0f);
+			ImGui::SliderInt("Misses until coarse switch", &nr_misses_coarse_switch, 2, 8);
+			
 			ImGui::SliderFloat("Cloud Min Height", &cloud_height_min, 0.0f, 100.0f);
 			ImGui::SliderFloat("Cloud Max Height", &cloud_height_max, 0.0f, 100.0f);
 
