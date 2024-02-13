@@ -316,8 +316,8 @@ int main()
 	int cloud_use_phase_function = 1;
 
 	float outscattering_ambient = 0.9;
-	float attenuation_clamping  = 0.1; 
-	float density_based_ambient = 0.07;
+	float attenuation_clamping  = 0.132; 
+	float density_based_ambient = 0.027;
 
 	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
