@@ -302,8 +302,7 @@ int main()
 	glm::vec3 sun_dir = glm::vec3(0,1,0);
 	glm::vec3 cloud_color = glm::vec3(1);
 	float cloud_light_strength = 3.3;
-	glm::vec3 cloud_ambient = glm::vec3(0.5);
-	float outscattering_ambient = 0.9;
+	glm::vec3 cloud_ambient = glm::vec3(0.0);
 
 	float cloud_global_coverage = 0.92;
 	float cloud_global_density = 25.0;
@@ -315,6 +314,10 @@ int main()
 
 	float phase_eccentricity_g = 0.2;
 	int cloud_use_phase_function = 1;
+
+	float outscattering_ambient = 0.9;
+	float attenuation_clamping  = 0.1; 
+	float density_based_ambient = 0.07;
 
 	int raymarch_steps = 64;
 	float cloud_jitter = 0.9; // balance between noise and aliasing in form of rings
@@ -480,6 +483,8 @@ int main()
 			post_program.set1i("use_phase_function", cloud_use_phase_function);
 			post_program.set1f("phase_eccentricity", phase_eccentricity_g);
 			post_program.set1f("outscattering_ambient", outscattering_ambient);
+			post_program.set1f("attenuation_clamp", attenuation_clamping);
+			post_program.set1f("density_ambient", density_based_ambient);
 
 			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
@@ -524,6 +529,8 @@ int main()
 				ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
 			
 				ImGui::SliderFloat("Outscattering ambient", &outscattering_ambient, 0, 1);
+				ImGui::SliderFloat("Sun-attenuation clamping", &attenuation_clamping, 0, 1);
+				ImGui::SliderFloat("Density based ambient", &density_based_ambient, 0, 1);
 			}
 
 			if (ImGui::CollapsingHeader("Raymarching Settings"))

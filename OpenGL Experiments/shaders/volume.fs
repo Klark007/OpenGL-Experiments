@@ -80,6 +80,8 @@ uniform float weather_offset;
 uniform float phase_eccentricity;
 uniform int use_phase_function;
 uniform float outscattering_ambient; // [0,1]
+uniform float attenuation_clamp;
+uniform float density_ambient;
 
 uniform int worley_channel;
 uniform vec3 worley_offset;
@@ -165,16 +167,24 @@ float light_transmission(vec3 origin, vec3 dir, float d) {
 		// increase step size for light transmission calculations
 		float tau = 0.0;
 		float t = 0;
-		for (int c = 0; c < nr_steps/2; c++) {
+
+		int c;
+		for (c = 0; c < nr_steps/2; c++) {
 			if (!(t < t1)) {
 				break;
 			}
 			vec3 p = n.o + n.d*t;
+
+			// density clamping
 			tau += sample_density(p);
 
 			t += step_size;
 		}
-		trans = exp(-tau * step_size * (volume.absorption+volume.scattering));
+		// attenuation clamping 
+		float t_s = exp(-tau * step_size * (volume.absorption+volume.scattering));
+		float t_c = exp(-(c*attenuation_clamp*global_density) * step_size * (volume.absorption+volume.scattering));
+
+		trans = max(t_s, t_c);
 	}
 	return trans;
 }
@@ -233,7 +243,11 @@ vec3 raymarching(Ray r, float t0, float t1) {
 				float os_ambient = 1.0 - clamp(outscattering_ambient*pow(density/global_density,remap(height,0.3,0.9,0.5,1.0)),0,1) * clamp(pow(remap(height,0,0.3,0.8,1.0), 0.8),0,1);
 
 				float l_transmission = light_transmission(p, light_dir, t0);
-				result += transmission * (l_transmission * light_color * light_strength + light_albedo) * os_ambient * phase * volume.scattering * step_size * density;
+
+				//  density dependent ambient
+				float l_trans_ambient = max(l_transmission, density_ambient*density);
+
+				result += transmission * (l_trans_ambient * light_color * light_strength + light_albedo) * os_ambient * phase * volume.scattering * step_size * density;
 			}
 
 			nr_misses = 0;
