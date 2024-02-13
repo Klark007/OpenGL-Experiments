@@ -47,6 +47,7 @@ void handle_input(GLFWwindow* window);
 int screen_x = 900;
 int screen_y = 600;
 bool resize = false;
+float delta_time;
 
 Camera camera = { glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, 1.0, 0.0) };
 
@@ -303,12 +304,13 @@ int main()
 	float cloud_light_strength = 3.3;
 	glm::vec3 cloud_ambient = glm::vec3(0.5);
 
-	float cloud_global_coverage = 1.0;
+	float cloud_global_coverage = 0.92;
 	float cloud_global_density = 25.0;
 
 	float cloud_lf_scale = 0.059;
 	float cloud_hf_scale = 0.082;
 	float weather_scale = 0.014;
+	float weather_offset = 0.25;
 
 	float phase_eccentricity_g = 0.2;
 
@@ -353,8 +355,15 @@ int main()
 	float slope_scale_bias = 2.5f;
 	float constant_bias = 7.0f;
 
+	float current_time = glfwGetTime();
+	float last_time = current_time - 1.0 / 30;
+
 	while (!glfwWindowShouldClose(window))
 	{
+		current_time = glfwGetTime();
+		delta_time = current_time - last_time;
+		last_time = current_time;
+
 		// input
 		handle_input(window);
 		
@@ -403,7 +412,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		program.use();
-		program.set1f("time", glfwGetTime());
+		program.set1f("time", current_time);
 
 		glPolygonOffset(0.0f, 0.0f);
 
@@ -442,7 +451,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		post_program.use();
-		post_program.set1f("time", glfwGetTime());
+		post_program.set1f("time", current_time);
 		post_program.set_vec2f("resolution", (float)screen_x, (float)screen_y);
 		post_program.set_mat4f("view", view);
 		post_program.set_vec3f("w_pos", camera_pos);
@@ -462,6 +471,7 @@ int main()
 			
 			post_program.set1f("global_coverage", cloud_global_coverage);
 			post_program.set1f("global_density", cloud_global_density);
+			post_program.set1f("weather_offset", weather_offset);
 
 			post_program.set1f("low_freq_scale", cloud_lf_scale);
 			post_program.set1f("high_freq_scale", cloud_hf_scale);
@@ -523,7 +533,8 @@ int main()
 			{
 				ImGui::SliderFloat("Global coverage", &cloud_global_coverage, 0.0f, 1.0f);
 				ImGui::SliderFloat("Global density", &cloud_global_density, 0.0f, 50.0f);
-				
+				ImGui::SliderFloat("Weather offset", &weather_offset, 0.0f, 1.0f);
+
 				ImGui::SliderFloat("Low freq scale", &cloud_lf_scale, 0.0f, 1.0f);
 				ImGui::SliderFloat("High freq scale", &cloud_hf_scale, 0.0f, 1.0f);
 				ImGui::SliderFloat("Weather scale", &weather_scale, 0.0f, 1.0f);
@@ -632,7 +643,7 @@ void handle_input(GLFWwindow* window)
 	if (!can_move)
 		return;
 
-	const float strength = 0.1f;
+	const float strength = 8.0f;
 	
 	float dx = 0.0f;
 	float dy = 0.0f;
@@ -663,30 +674,30 @@ void handle_input(GLFWwindow* window)
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_J)) {
-		worley_offset.x -= 0.01;
+		worley_offset.x -= 0.001;
 	}
 	if (glfwGetKey(window, GLFW_KEY_L)) {
-		worley_offset.x += 0.01;
+		worley_offset.x += 0.001;
 	}
 	if (glfwGetKey(window, GLFW_KEY_K)) {
-		worley_offset.y -= 0.01;
+		worley_offset.y -= 0.001;
 	}
 	if (glfwGetKey(window, GLFW_KEY_I)) {
-		worley_offset.y += 0.01;
+		worley_offset.y += 0.001;
 	}
 	if (glfwGetKey(window, GLFW_KEY_U)) {
-		worley_offset.z -= 0.002;
+		worley_offset.z -= 0.001;
 	}
 	if (glfwGetKey(window, GLFW_KEY_O)) {
-		worley_offset.z += 0.002;
+		worley_offset.z += 0.001;
 	}
 
 	glm::vec3 pos = camera.get_pos();
 	glm::vec3 dir = camera.get_dir();
 
-	pos += dx * strength * dir;
+	pos += dx * strength * dir * delta_time;
 	glm::vec3 side = glm::cross(dir, camera.get_up()); // can assume both normalized
-	pos += dy * strength * side;
+	pos += dy * strength * side * delta_time;
 
 	camera.set_pos(pos);
 }

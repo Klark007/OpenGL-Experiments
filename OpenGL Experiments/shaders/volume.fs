@@ -52,12 +52,13 @@ struct Volume {
 Volume volume = {0.1, 0.1};
 
 uniform int nr_steps;
+uniform float jitter_str; // range [0,1]
+int time_based_seed; // usefull if we would average over multiple frames
 
 uniform int do_distance_step_size;
 uniform float dist_incr_step_size;
 uniform int do_early_termination;
 uniform float early_termination;
-uniform float jitter_str; // range [0,1]
 
 // adaptive stepsize
 uniform bool adaptive_stepsize;
@@ -74,6 +75,7 @@ uniform float weather_scale;
 
 uniform float global_density;
 uniform float global_coverage;
+uniform float weather_offset;
 
 uniform float phase_eccentricity;
 uniform int use_phase_function;
@@ -107,8 +109,8 @@ float density_altering_height_function(vec3 p) {
 
 float weather_map_sample(vec3 p) {
 	vec3 weather_sample =  texture(weather_map, weather_scale*p.xz + worley_offset.xy).rgb;
-	float hc_sample = weather_sample.r;
-	return clamp(global_coverage-0.5, 0, 1) * hc_sample * 2;
+	float hc_sample = weather_sample.r+weather_offset;
+	return clamp(clamp(global_coverage-0.5, 0, 1) * hc_sample * 2,0,1);
 }
 
 float low_freq(vec3 p) {
@@ -193,7 +195,8 @@ vec3 raymarching(Ray r, float t0, float t1) {
 	vec3 result = vec3(0.0);
 	// this introduces noise but removes Banding
 	// impact of noise could be lessend by blur, avoiding small regions with much transmission or smaller perturbation
-	float n = (gold_noise(gl_FragCoord.xy, 0.9787)-0.5) * jitter_str + 0.5;
+	vec2 seed = (time_based_seed == 1) ? gl_FragCoord.xy+time*100 : gl_FragCoord.xy;
+	float n = (gold_noise(seed, 0.9787)-0.5) * jitter_str + 0.5;
 	float t = t0+step_size*n;
 
 	// actually could take more if we miss as often as possible and need to backtrack immediately * nr_steps
@@ -238,7 +241,6 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		step_size = (nr_misses >= nr_misses_switch) && adaptive_stepsize ? coarse_sz : fine_sz;
 		t += step_size;
 	}
-	//return vec3(t0/4000);
 	
 	result += texture(frame, tex_coord).rgb * transmission;
 	return result;
@@ -292,9 +294,13 @@ void main()
 				FragColor = vec4(vec3(high_freq(r.o+r.d*t0)),1);
 				return;
 			} else if (worley_channel == 2) {
+				FragColor = vec4(vec3(weather_map_sample(r.o+r.d*t0)),1);
+				return;
+			} else if (worley_channel == 3) {
 				FragColor = vec4(vec3(sample_density(r.o+r.d*t0)),1);
 				return;
 			}
+			
 			
 
 			FragColor = vec4(raymarching(r, t0, t1), 1.0);

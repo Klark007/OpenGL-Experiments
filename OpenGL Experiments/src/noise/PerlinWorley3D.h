@@ -30,12 +30,8 @@ void PerlinWorley3D<T>::gen_img() {
   p.normalize();
 
   w.invert();
-  w.add(-0.3);
-  w.clamp(0,w.max());
   w.normalize();
 
-  p.add(-0.2);
-  p.clamp(0,p.max());
   p.normalize();
 
   this->img_data = w.get_vec();
