@@ -303,6 +303,7 @@ int main()
 	glm::vec3 cloud_color = glm::vec3(1);
 	float cloud_light_strength = 3.3;
 	glm::vec3 cloud_ambient = glm::vec3(0.5);
+	float outscattering_ambient = 0.9;
 
 	float cloud_global_coverage = 0.92;
 	float cloud_global_density = 25.0;
@@ -313,7 +314,6 @@ int main()
 	float weather_offset = 0.25;
 
 	float phase_eccentricity_g = 0.2;
-
 	int cloud_use_phase_function = 1;
 
 	int raymarch_steps = 64;
@@ -479,6 +479,7 @@ int main()
 
 			post_program.set1i("use_phase_function", cloud_use_phase_function);
 			post_program.set1f("phase_eccentricity", phase_eccentricity_g);
+			post_program.set1f("outscattering_ambient", outscattering_ambient);
 
 			post_program.set1i("nr_steps", raymarch_steps);
 			post_program.set1f("jitter_str", cloud_jitter);
@@ -521,6 +522,8 @@ int main()
 				
 				ImGui::Checkbox("Phase function", (bool*)&cloud_use_phase_function);
 				ImGui::SliderFloat("Phase eccentrity", &phase_eccentricity_g, -1.0f, 1.0f);
+			
+				ImGui::SliderFloat("Outscattering ambient", &outscattering_ambient, 0, 1);
 			}
 
 			if (ImGui::CollapsingHeader("Raymarching Settings"))

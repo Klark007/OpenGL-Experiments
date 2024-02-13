@@ -79,6 +79,7 @@ uniform float weather_offset;
 
 uniform float phase_eccentricity;
 uniform int use_phase_function;
+uniform float outscattering_ambient; // [0,1]
 
 uniform int worley_channel;
 uniform vec3 worley_offset;
@@ -208,24 +209,31 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		vec3 p = r.o + t*r.d;
 		float density = sample_density(p);
 		
-		transmission *= exp(-density*step_size*(volume.absorption+volume.scattering)); // absorption and out scattering
+		float attenuation = exp(-density*step_size*(volume.absorption+volume.scattering));
+		transmission *= attenuation; // absorption and out scattering
 		
 		if (density > 0) {
 			// were using coarse step size
 			if (nr_misses >= nr_misses_switch && adaptive_stepsize) {
 				// backtrack
-				transmission /= exp(-density*step_size*(volume.absorption+volume.scattering));
+				transmission /= attenuation;
 				t -= step_size;
 				step_size = fine_sz;
 			} else {
+				vec3 p = r.o + r.d*t;
 				// compute in scattering from light source
 				vec3 dir_to_light = -normalize(light_dir);//normalize(light_pos - (r.o + r.d*t));
 
+				// phase function
 				float cos_theta = dot(r.d, dir_to_light);
 				float phase = (use_phase_function==1) ? henyey_greenstein_phase(cos_theta, phase_eccentricity) : 0.25*PI;
 			
-				float l_transmission = light_transmission(r.o + r.d*t, light_dir, t0);
-				result += transmission * (l_transmission * light_color * light_strength + light_albedo) * phase * volume.scattering * step_size * density;
+				// out scattering ambient
+				float height = get_height_fraction(p.y);
+				float os_ambient = 1.0 - clamp(outscattering_ambient*pow(density/global_density,remap(height,0.3,0.9,0.5,1.0)),0,1) * clamp(pow(remap(height,0,0.3,0.8,1.0), 0.8),0,1);
+
+				float l_transmission = light_transmission(p, light_dir, t0);
+				result += transmission * (l_transmission * light_color * light_strength + light_albedo) * os_ambient * phase * volume.scattering * step_size * density;
 			}
 
 			nr_misses = 0;
