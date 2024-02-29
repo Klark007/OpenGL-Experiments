@@ -31,7 +31,7 @@ const float PI  = 3.14159265358979323846264;
 struct AABB {
 	vec2 min_max[3];
 };
-uniform AABB cloud_bounding_box = {vec2[](vec2(-50, 50), vec2(20, 25), vec2(-50, 50))};
+uniform AABB cloud_bounding_box = {vec2[](vec2(-300, 300), vec2(20, 25), vec2(-300, 300))};
 
 uniform vec2 cloud_min_max_height;
 
@@ -193,7 +193,7 @@ float henyey_greenstein_phase(float theta, float g) {
 	return 0.25*PI*(1-g*g) / pow(1 + g*g - 2*g*theta, 1.5);
 }
 
-vec3 raymarching(Ray r, float t0, float t1) {
+vec4 raymarching(Ray r, float t0, float t1) {
 	vec3 res = vec3(0);
 	float transmission = 1.0; // how much of light is lost due to outscattering and absorption 
 	float uniform_sz = (t1-t0) / nr_steps;
@@ -264,8 +264,7 @@ vec3 raymarching(Ray r, float t0, float t1) {
 		t += step_size;
 	}
 	
-	result += texture(frame, tex_coord).rgb * transmission;
-	return result;
+	return vec4(result, 1-transmission);
 }
 
 void main()
@@ -292,7 +291,6 @@ void main()
 	float t0;
 	float t1;
 
-	vec4 background_color = texture(frame, tex_coord);
 	if (intersect_aabb(cloud_bounding_box, r, t0, t1) && t1 >= 0) {
 		bool inside = (t0 < 0);
 
@@ -303,12 +301,13 @@ void main()
 		float ray_depth = abs((intersect_pos).z);
 		// depth testing
 		if (ray_depth >= frame_depth) {
-			FragColor = background_color;
+			FragColor = vec4(0);
 			return;
 		}
 		if (inside) {
-			FragColor = vec4(raymarching(r, 0, t), 1.0);
+			FragColor = raymarching(r, 0, t);
 		} else {
+			/*
 			if (worley_channel == 0) {
 				FragColor = vec4(vec3(low_freq(r.o+r.d*t0)),1);
 				return;
@@ -322,13 +321,12 @@ void main()
 				FragColor = vec4(vec3(sample_density(r.o+r.d*t0)),1);
 				return;
 			}
+			*/
 			
-			
-
-			FragColor = vec4(raymarching(r, t0, t1), 1.0);
+			FragColor = raymarching(r, t0, t1);
 		}
 	} else {
-		FragColor = background_color;
+		FragColor = vec4(0);
 	}
 }
 

@@ -251,6 +251,31 @@ int main()
 		return -1;
 	}
 
+
+	// write clouds into lower resolution texture
+	unsigned int volume_buffer;
+	glGenFramebuffers(1, &volume_buffer);
+
+	int volume_downscale_factor = 2;
+	Texture volume_color_t = Texture(
+		std::string("volume"),
+		screen_x / volume_downscale_factor,
+		screen_y / volume_downscale_factor,
+		(unsigned char*)0,
+		GL_RGBA,
+		GL_RGBA,
+		Texture_Filter::linear,
+		Texture_Wrap::clamp
+	);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, volume_buffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, volume_color_t.get_id(), 0);
+
+	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cerr << "Volume frame buffer creation failed with status: " << status << std::endl;
+		return -1;
+	}
 	
 	unsigned int noise_res_x = 128;
 	unsigned int noise_res_y = 128;
@@ -336,22 +361,31 @@ int main()
 	float cloud_height_min = 20.0;
 	float cloud_height_max = 25.0;
 
+	std::vector<std::shared_ptr<Shader>> volume_shaders;
+	volume_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
+	volume_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER, "shaders/volume.fs"));
+	Program volume_program{ volume_shaders };
+
+	volume_program.use();
+	frame_color_t.set_texture_unit(volume_program, 2);
+	frame_depth_t.set_texture_unit(volume_program, 3);
+
+	lf_texture.set_texture_unit(volume_program, 4);
+	hf_texture.set_texture_unit(volume_program, 5);
+	weather_texture.set_texture_unit(volume_program, 6);
+		
+	volume_program.set1f("projection.y_fov", fov_y);
+	volume_program.set1f("projection.d_near", near_plane);
+	volume_program.set1f("projection.d_far", far_plane);
+
 	std::vector<std::shared_ptr<Shader>> post_shaders;
-	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/volume.vs"));
-	post_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER, "shaders/volume.fs"));
+	post_shaders.push_back(std::make_shared<Shader>(GL_VERTEX_SHADER, "shaders/post.vs"));
+	post_shaders.push_back(std::make_shared<Shader>(GL_FRAGMENT_SHADER, "shaders/post.fs"));
 	Program post_program{ post_shaders };
 
 	post_program.use();
 	frame_color_t.set_texture_unit(post_program, 2);
-	frame_depth_t.set_texture_unit(post_program, 3);
-
-	lf_texture.set_texture_unit(post_program, 4);
-	hf_texture.set_texture_unit(post_program, 5);
-	weather_texture.set_texture_unit(post_program, 6);
-		
-	post_program.set1f("projection.y_fov", fov_y);
-	post_program.set1f("projection.d_near", near_plane);
-	post_program.set1f("projection.d_far", far_plane);
+	volume_color_t.set_texture_unit(post_program, 3);
 
 	std::cout << "Finished preprocessing:" << glGetError() << " " << GL_NO_ERROR << std::endl;
 
@@ -376,12 +410,7 @@ int main()
 		if (recompile_shaders && glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE) {
 			std::cout << "Recompile" << std::endl;
 
-			/*
-			for (std::shared_ptr<Shader>& shader : post_shaders) {
-				shader->recompile();
-			}
-			*/
-			post_program.recompile();
+			volume_program.recompile();
 
 			recompile_shaders = false;
 		}
@@ -445,68 +474,83 @@ int main()
 
 
 		// post processing
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, screen_x, screen_y);
+		glBindFramebuffer(GL_FRAMEBUFFER, volume_buffer);
+		glViewport(0, 0, screen_x / volume_downscale_factor, screen_y / volume_downscale_factor);
 
-		// rendering
-		glClearColor(0.1, 0.3, 0.1, 1);
+		if (resize) {
+			volume_color_t.resize(screen_x / volume_downscale_factor, screen_y / volume_downscale_factor);
+		}
+
+		// not sure if necessary
+		glClearColor(0.0, 0.0, 0.0, 1);
 		glDisable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		post_program.use();
-		post_program.set1f("time", current_time);
-		post_program.set_vec2f("resolution", (float)screen_x, (float)screen_y);
-		post_program.set_mat4f("view", view);
-		post_program.set_vec3f("w_pos", camera_pos);
+		volume_program.use();
+		volume_program.set1f("time", current_time);
+		volume_program.set_vec2f("resolution", (float)screen_x, (float)screen_y);
+		volume_program.set_mat4f("view", view);
+		volume_program.set_vec3f("w_pos", camera_pos);
 
 		frame_color_t.bind();
 		frame_depth_t.bind();
 
 		// interactive:
 		{
-			post_program.set1i("worley_channel", worley_channel);
-			post_program.set_vec3f("worley_offset", worley_offset);
+			volume_program.set1i("worley_channel", worley_channel);
+			volume_program.set_vec3f("worley_offset", worley_offset);
 			
-			post_program.set_vec3f("light_dir", sun_dir);
-			post_program.set_vec3f("light_color", cloud_color);
-			post_program.set_vec3f("light_albedo", cloud_ambient);
-			post_program.set1f("light_strength", cloud_light_strength);
+			volume_program.set_vec3f("light_dir", sun_dir);
+			volume_program.set_vec3f("light_color", cloud_color);
+			volume_program.set_vec3f("light_albedo", cloud_ambient);
+			volume_program.set1f("light_strength", cloud_light_strength);
 			
-			post_program.set1f("global_coverage", cloud_global_coverage);
-			post_program.set1f("global_density", cloud_global_density);
-			post_program.set1f("weather_offset", weather_offset);
+			volume_program.set1f("global_coverage", cloud_global_coverage);
+			volume_program.set1f("global_density", cloud_global_density);
+			volume_program.set1f("weather_offset", weather_offset);
 
-			post_program.set1f("low_freq_scale", cloud_lf_scale);
-			post_program.set1f("high_freq_scale", cloud_hf_scale);
-			post_program.set1f("weather_scale", weather_scale);
+			volume_program.set1f("low_freq_scale", cloud_lf_scale);
+			volume_program.set1f("high_freq_scale", cloud_hf_scale);
+			volume_program.set1f("weather_scale", weather_scale);
 
-			post_program.set1i("use_phase_function", cloud_use_phase_function);
-			post_program.set1f("phase_eccentricity", phase_eccentricity_g);
-			post_program.set1f("outscattering_ambient", outscattering_ambient);
-			post_program.set1f("attenuation_clamp", attenuation_clamping);
-			post_program.set1f("density_ambient", density_based_ambient);
+			volume_program.set1i("use_phase_function", cloud_use_phase_function);
+			volume_program.set1f("phase_eccentricity", phase_eccentricity_g);
+			volume_program.set1f("outscattering_ambient", outscattering_ambient);
+			volume_program.set1f("attenuation_clamp", attenuation_clamping);
+			volume_program.set1f("density_ambient", density_based_ambient);
 
-			post_program.set1i("nr_steps", raymarch_steps);
-			post_program.set1f("jitter_str", cloud_jitter);
+			volume_program.set1i("nr_steps", raymarch_steps);
+			volume_program.set1f("jitter_str", cloud_jitter);
 
-			post_program.set1i("adaptive_stepsize", adaptive_stepsize);
-			post_program.set1f("coarse_multiplier", coarse_stepsize_scale);
-			post_program.set1i("nr_misses_switch", nr_misses_coarse_switch);
+			volume_program.set1i("adaptive_stepsize", adaptive_stepsize);
+			volume_program.set1f("coarse_multiplier", coarse_stepsize_scale);
+			volume_program.set1i("nr_misses_switch", nr_misses_coarse_switch);
 
-			post_program.set1i("do_distance_step_size", do_incr_sz_far);
-			post_program.set1i("do_early_termination", do_early_termination);
-			post_program.set1f("dist_incr_step_size", 1.0 / inv_incr_sz_far_away);
-			post_program.set1f("early_termination", 1.0 / inv_early_termination);
+			volume_program.set1i("do_distance_step_size", do_incr_sz_far);
+			volume_program.set1i("do_early_termination", do_early_termination);
+			volume_program.set1f("dist_incr_step_size", 1.0 / inv_incr_sz_far_away);
+			volume_program.set1f("early_termination", 1.0 / inv_early_termination);
 
-			post_program.set_vec2f("cloud_bounding_box.min_max[1]", cloud_height_min, cloud_height_max);
-			post_program.set_vec2f("cloud_min_max_height", cloud_height_min, cloud_height_max);
+			volume_program.set_vec2f("cloud_bounding_box.min_max[1]", cloud_height_min, cloud_height_max);
+			volume_program.set_vec2f("cloud_min_max_height", cloud_height_min, cloud_height_max);
 		}
 
 		lf_texture.bind();
 		hf_texture.bind();
 		weather_texture.bind();
 		
+		ground_plane.draw(volume_program);
+
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, screen_x, screen_y);
+		post_program.use();
+
+		frame_color_t.bind();
+		volume_color_t.bind();
+
 		ground_plane.draw(post_program);
+
 
 		glEnable(GL_DEPTH_TEST);
 

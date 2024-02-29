@@ -197,6 +197,8 @@
     <None Include="src\noise\Worley-Noise\.gitattributes" />
     <None Include="src\noise\Worley-Noise\.gitignore" />
     <None Include="src\noise\Worley-Noise\README.md" />
+    <None Include="shaders\post.vs" />
+    <None Include="shaders\post.fs" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\Old\depth_color.fs" />

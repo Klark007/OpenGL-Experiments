@@ -86,6 +86,8 @@
     <None Include="shaders\phong.vs" />
     <None Include="shaders\Old\uniform_color.fs" />
     <None Include="shaders\phong_soft_shadows.fs" />
+    <None Include="shaders\post.fs" />
+    <None Include="shaders\post.vs" />
     <None Include="shaders\volume.fs" />
     <None Include="shaders\volume.vs" />
     <None Include="src\noise\Worley-Noise\.gitattributes" />
